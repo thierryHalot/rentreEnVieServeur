@@ -2,18 +2,22 @@
 
 namespace App\Controller;
 
+use App\Entity\TypeUser;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\User\User;
 
 class ApiController extends AbstractController
 {
     /**
-     * @Route("/api", name="api")
+     * @Route("/api/", name="api")
      */
-    public function index()
+    public function index($id)
     {
 
+        dump($id);
         return $this->render('api/index.html.twig', [
             'controller_name' => 'ApiController',
         ]);
@@ -34,5 +38,165 @@ class ApiController extends AbstractController
 
         //je les renvoi au format json
         return $this->json($users);
+    }
+
+    /**
+     * @Route("api/get/user/{id}", name="apiGetUser")
+     */
+//fonction qui permet de récupéré un utilisateur par rapport a son id et de le renvoyé au format json
+    public function apiGetUser($id)
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($id);
+
+
+        return $this->json($user);
+    }
+
+    /**
+     * @Route("api/put/user/{id}", name="apiPutUser")
+     */
+//fonction qui permet de mettre à jour un utilisateur selon son id
+    public function apiPutUser($id,Request $request)
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        //j'instancie une nouvelle réponse
+        $reponse = new Response();
+
+
+        //je récupère l'uttilisateur suivant son id
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($id);
+
+        //je vérifie dans un premier temp que je récupère bien des données et que l'utilisateur existe en bdd
+        if(!empty($user) && $request->getContent()) {
+            //je recupere les valeurs envoyée que je stocke dans des variables
+            $nom = $request->get('nom');
+            $prenom = $request->get('prenom');
+            $age = $request->get('age');
+            $sexe = $request->get('sexe');
+            $tel = $request->get('tel');
+            $adresse = $request->get('adresse');
+            $mail = $request->get('mail');
+            $pseudo = $request->get('pseudo');
+            $mdp = $request->get('mdp');
+            $fumeur = $request->get('fumeur');
+            $clubFavoris = $request->get('clubFavoris');
+            $musiqueFavoris = $request->get('musiqueFavoris');
+            $img = $request->get('img');
+            $modeSortie = $request->get('modeSortie');
+            $perimetre = $request->get('perimetre');
+            $latitude = $request->get('latitude');
+            $longitude = $request->get('longitude');
+            $isDel = $request->get('isDel');
+
+            //je verifie les valeurs envoyé une a une, si elle ne sont pas vide et null alors je peut les affectées à mon entité
+
+            if ($nom != "null" && !empty($nom)) {
+
+                $user->setNom($nom);
+
+            }
+
+            if ($prenom != "null" && !empty($prenom)) {
+
+                $user->setPrenom($prenom);
+
+            }
+
+            if ($age != "null" && !empty($age)) {
+
+                $user->setAge($age);
+            }
+
+            if ($sexe != "null" && !empty($sexe)) {
+
+                $user->setSexe($sexe);
+            }
+
+            if ($tel != "null" && !empty($tel)) {
+
+                $user->setTel($tel);
+            }
+
+            if ($adresse != "null" && !empty($sexe)) {
+
+                $user->setAdresse($adresse);
+            }
+
+            if ($mail != "null" && !empty($mail)) {
+
+                $user->setMail($mail);
+            }
+            if ($pseudo != null && !empty($pseudo)) {
+
+                $user->setPseudo($pseudo);
+            }
+
+            if ($mdp != null && !empty($mdp)) {
+
+                $user->setMdp($mdp);
+            }
+
+            if ($fumeur != null && !empty($fumeur)) {
+
+                $user->setFumeur($fumeur);
+            }
+
+            if ($clubFavoris != null && !empty($fumeur)) {
+
+                $user->setClubFavoris($clubFavoris);
+            }
+            if ($musiqueFavoris != null && !empty($musiqueFavoris)) {
+
+                $user->setMusiqueFavoris($musiqueFavoris);
+            }
+            if ($img != null && !empty($img)) {
+
+                $user->setImg($img);
+            }
+            if ($modeSortie != null && !empty($modeSortie)) {
+
+                $user->setModeSortie($modeSortie);
+            }
+            if ($perimetre != null && !empty($perimetre)) {
+                $user->setPerimetre($perimetre);
+
+            }
+            if ($latitude != null && !empty($latitude)) {
+
+                $user->setLatitude($latitude);
+            }
+            if ($longitude != null && !empty($longitude)) {
+
+                $user->setLongitude($longitude);
+            }
+            if ($isDel != null && !empty($isDel)) {
+
+                $user->setIsDel($isDel);
+            }
+
+//je met a jour l'utilisateur et j'envoi un statue 200 pour prévenir que l'insertion c'est bien effectuer
+            $entityManager = $this->getDoctrine()->getManager();
+
+            $entityManager->persist($user);
+            $entityManager->flush();
+
+
+            $reponse->setStatusCode('200');
+
+       //sinon j'envoi une erreur
+        }else{
+
+            $reponse->setStatusCode('404');
+
+        }
+
+        return $reponse;
+
     }
 }
