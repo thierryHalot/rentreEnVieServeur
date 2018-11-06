@@ -94,7 +94,8 @@ class ApiController extends AbstractController
             $longitude = $request->get('longitude');
             $isDel = $request->get('isDel');
 
-            //je verifie les valeurs envoyé une a une, si elle ne sont pas vide et null alors je peut les affectées à mon entité
+            //je verifie les valeurs envoyé une a une, si elle ne sont pas vide et null, si elle rentre dans ces conditions
+            // alors je peut les affectées à mon entité
 
             if ($nom != "null" && !empty($nom)) {
 
@@ -199,4 +200,84 @@ class ApiController extends AbstractController
         return $reponse;
 
     }
+
+    /**
+     * @Route("api/post/user/{idRole}", name="apiPostUser")
+     */
+//fonction qui permet d'inserer un nouvelle utilisateur
+    public function apiPostUser($idRole,Request $request)
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        $reponse = new Response();
+
+        //je récupère le role a affecter à mon nouvelle utilisateur par rapport a son id
+        $role = $this->getDoctrine()->getRepository(TypeUser::class)->find($idRole);
+
+        //si mon role existe et que je récupere des données
+        if(!empty($role) && $request->getContent()) {
+
+            //j'instancie un nouvelle utilisateur
+            $user = new \App\Entity\User();
+
+            //je recupere les valeurs envoyée que je stocke dans des variables
+            $nom = $request->get('nom');
+            $prenom = $request->get('prenom');
+            $age = $request->get('age');
+            $sexe = $request->get('sexe');
+            $tel = $request->get('tel');
+            $adresse = $request->get('adresse');
+            $mail = $request->get('mail');
+            $pseudo = $request->get('pseudo');
+            $mdp = $request->get('mdp');
+            $fumeur = $request->get('fumeur');
+            $clubFavoris = $request->get('clubFavoris');
+            $musiqueFavoris = $request->get('musiqueFavoris');
+            $img = $request->get('img');
+            $modeSortie = $request->get('modeSortie');
+            $perimetre = $request->get('perimetre');
+            $latitude = $request->get('latitude');
+            $longitude = $request->get('longitude');
+            $isDel = $request->get('isDel');
+
+//j'affecte les donné a mon nouvelle utilisateur
+            $user->setNom($nom);
+            $user->setPrenom($prenom);
+            $user->setAge($age);
+            $user->setSexe($sexe);
+            $user->setTel($tel);
+            $user->setAdresse($adresse);
+            $user->setMail($mail);
+            $user->setPseudo($pseudo);
+            $user->setMdp($mdp);
+            $user->setFumeur($fumeur);
+            $user->setClubFavoris($clubFavoris);
+            $user->setMusiqueFavoris($musiqueFavoris);
+            $user->setImg($img);
+            $user->setModeSortie($modeSortie);
+            $user->setPerimetre($perimetre);
+            $user->setLatitude($latitude);
+            $user->setLongitude($longitude);
+            $user->setTypeUserId($role);
+            $user->setIsDel($isDel);
+
+            //je le persiste en db et j'envoi un code 200
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->persist($user);
+            $entityManager->flush();
+
+            $reponse->setStatusCode('200');
+
+         //sinon j'envoi un status d'erreur
+        }else{
+
+            $reponse->setStatusCode('404');
+
+        }
+
+        return $reponse;
+    }
+
+
 }
