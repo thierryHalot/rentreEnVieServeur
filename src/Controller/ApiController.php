@@ -3,8 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\BlackList;
+use App\Entity\HeaderMsg;
+use App\Entity\Msg;
 use App\Entity\News;
 use App\Entity\TypeUser;
+use App\Repository\MsgRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -474,5 +477,50 @@ if (!empty($blacklist)){
 }
         //je les renvoi au format json
         return $reponse;
+    }
+
+
+
+
+    /**
+     * @Route("/api/getConversation/{idEmetteur}/{idRecepteur}", name="getConversation")
+     */
+
+    //Retourne la conversation entre deux membres ou juste les message de l'emmetteur dans le cas ou il n'a pas eu de réponse
+    public function getConversationUser($idEmetteur,$idRecepteur)
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+
+
+
+        $headerEmetteur = $this->getDoctrine()->getRepository(HeaderMsg::class)->findOneBy(["emetteur_id" => $idEmetteur , "recepteur_id" => $idRecepteur ]);
+
+        $headerRecepteur = $this->getDoctrine()->getRepository(HeaderMsg::class)->findOneBy(["emetteur_id" => $idRecepteur , "recepteur_id" => $idEmetteur ]);
+
+//si l'emeteur a envoyer un message mais qu'il n'a pas eu de reponce
+        if (empty($headerRecepteur) && !empty($headerEmetteur)){
+
+            //dans ce cas la conversation est a sens unique, je recupere juste les message de l'emetteur
+    $conversation = $this->getDoctrine()->getRepository(Msg::class)->findBy(['msg_id' => $headerEmetteur->getId()]);
+
+    //si l'emeteur et le recepteur communique entre eux
+        }else if (!empty($headerEmetteur) && !empty($headerRecepteur)){
+
+            //dans ce cas je récupère leurs messages
+            $conversation = $this->getDoctrine()->getRepository(Msg::class)->getConversation($headerEmetteur->getId(), $headerRecepteur->getId());
+
+            //dans tous les autre cas, la conversation n'existe pas
+        }else{
+
+    $conversation = null;
+        }
+
+
+
+
+       //je retourne la conversation au format json
+        return $this->json($conversation);
     }
 }
