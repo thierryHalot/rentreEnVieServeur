@@ -47,4 +47,26 @@ class MsgRepository extends ServiceEntityRepository
         ;
     }
     */
+
+    /**
+     * @param $idEmetteur
+     * @param $idRecepteur
+     * @return array
+     */
+
+    //cette fonction permet de retourner la conversation de deux membre triez par date
+
+    public function getConversation($idHeaderEmetteur,$idHeaderRecepteur) : array
+    {
+
+        $qb = $this->createQueryBuilder('m')
+            ->where('m.msg_id = :idHeaderEmetteur')
+            ->setParameter('idHeaderEmetteur', $idHeaderEmetteur)
+            ->orWhere('m.msg_id = :idHeaderRecepteur')
+            ->setParameter('idHeaderRecepteur', $idHeaderRecepteur)
+            ->orderBy('m.date', 'ASC')
+            ->getQuery();
+
+        return $qb->execute();
+    }
 }
