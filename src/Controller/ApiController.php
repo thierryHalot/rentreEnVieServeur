@@ -369,4 +369,77 @@ class ApiController extends AbstractController
         return $reponse;
 
     }
+
+
+    /**
+     * @Route("/api/postBlacklist", name="postBlacklist")
+     */
+
+    //Permet d'inserer un utilisateur en blacklist
+    public function postBlacklistUser(Request $request)
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+
+        //j'instencie une nouvelle blacklist ainsi qu'une nouvelle reponse
+        $blacklist = new BlackList();
+        $reponse = new Response();
+
+        //je vérifie si je récupère bien des données
+        if($request->getContent()){
+
+
+            $date = new \DateTime($request->get('date'));
+
+            //je tente de récupèrer les utiliszteur correspondant aux données envoyé
+            $userBloquer = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($request->get("bloquer_id"));
+            $userBloquand = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($request->get("bloquand_id"));
+
+            //si les deux utilisateur existe et que je recupere bien la date alors je peut persister ma blacklist
+            //j'envoi donc un status 200
+            if(!empty($userBloquand) && !empty($userBloquer) && !empty($date) && $date != null){
+
+                $blacklist->setBloquerId($userBloquer);
+                $blacklist->setBloquandId($userBloquand);
+                $blacklist->setDate($date);
+
+                //je verifie si l'utilisateur n'a pas déja été blacklister
+                $blacklistVerif = $this->getDoctrine()->getRepository(BlackList::class)->findOneBy(["bloquand_id" => $userBloquand->getId(), "bloquer_id" => $userBloquer->getId() ]);
+
+             if(empty($blacklistVerif)){
+
+
+                 //j'insere les données
+                 $entityManager = $this->getDoctrine()->getManager();
+                 $entityManager->persist($blacklist);
+                 $entityManager->flush();
+
+                 //je renvoi un status 200
+                 $reponse->setStatusCode('200');
+
+
+                 //si l'utilisateur est deja blacklister, j'envoi un message d'erreur
+             }else{
+
+                 $reponse->setStatusCode('404');
+             }
+
+
+                //sinon j'envoi une erreur une erreur
+            }else{
+
+                $reponse->setStatusCode('404');
+
+            }
+
+         //si je ne recupere aucune donné j'envoi une erreur
+        }else{
+
+            $reponse->setStatusCode('404');
+
+        }
+
+        return $reponse;
+    }
 }
