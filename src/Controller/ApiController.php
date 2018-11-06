@@ -442,4 +442,37 @@ class ApiController extends AbstractController
 
         return $reponse;
     }
+
+
+    /**
+     * @Route("/api/deleteBlacklist/{idblacklist}", name="deleteBlacklist")
+     */
+
+    //Retourne tous les utilisateur blacklister d'un utilisateur
+    public function deleteBlacklist($idblacklist)
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+        //je recupère les utilisateur blacklister correspondant a un utilisateur
+
+        $reponse = new Response();
+        $blacklist = $this->getDoctrine()->getRepository(BlackList::class)->find($idblacklist);
+
+        //si ma blacklist existe alors je la supprime et je renvoi un statut 200
+if (!empty($blacklist)){
+
+    //j'insere les données
+    $entityManager = $this->getDoctrine()->getManager();
+    $entityManager->remove($blacklist);
+    $entityManager->flush();
+
+    $reponse->setStatusCode('200');
+
+}else{
+
+    $reponse->setStatusCode('400');
+}
+        //je les renvoi au format json
+        return $reponse;
+    }
 }
