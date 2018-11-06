@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\BlackList;
 use App\Entity\News;
 use App\Entity\TypeUser;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -9,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\User\User;
+use Symfony\Component\Validator\Constraints\DateTime;
 
 class ApiController extends AbstractController
 {
@@ -297,4 +299,74 @@ class ApiController extends AbstractController
         return $this->json($news);
     }
 
+
+    /**
+     * @Route("/api/getBlacklist/{id}", name="getBlacklist")
+     */
+
+    //Retourne tous les utilisateur blacklister d'un utilisateur
+    public function getBlacklistUser($id)
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+        //je recupère les utilisateur blacklister correspondant a un utilisateur
+        $blacklist = $this->getDoctrine()->getRepository(BlackList::class)->findOneBy(["bloquand_id" => $id]);
+
+
+        //je les renvoi au format json
+        return $this->json($blacklist);
+    }
+
+
+    /**
+     * @Route("/api/putBlacklist/{idUserBloquand}/{idUserBloquer}", name="putBlacklist")
+     */
+
+    //fonction qui permet de mettre a jour la blacklist d'un utililisateur
+
+    public function putBlacklistUser($idUserBloquand,$idUserBloquer,Request $request)
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        $reponse = new Response();
+
+        $blacklist = $this->getDoctrine()->getRepository(BlackList::class)->findOneBy(["bloquand_id" => $idUserBloquand, "bloquer_id" => $idUserBloquer ]);
+
+        //je vérifie la blacklist existe et que je récupère des données
+        if (!empty($blacklist && $request->getContent())){
+
+            $date = new \DateTime($request->get('date'));
+            $userBloquer = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($request->get("bloquer_id"));
+
+            //je vérifie si la date envoyé n'est pas null ou vide
+            if ($date != null && !empty($date)) {
+                $blacklist->setDate($date);
+            }
+
+            //je verifie si le nouvelle utilisateur existe en bdd
+            if(!empty($userBloquer)){
+
+                $blacklist->setBloquerId($userBloquer);
+
+            }
+
+            //j'insere les données
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->persist($blacklist);
+            $entityManager->flush();
+
+            //je renvoi un status 200
+            $reponse->setStatusCode('200');
+
+            //sinon je renvoi un code d'erreur
+        }else{
+
+            $reponse->setStatusCode('404');
+        }
+
+
+        return $reponse;
+
+    }
 }
