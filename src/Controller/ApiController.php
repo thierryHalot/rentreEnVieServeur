@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\News;
 use App\Entity\TypeUser;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -279,5 +280,21 @@ class ApiController extends AbstractController
         return $reponse;
     }
 
+    /**
+     * @Route("/api/getNews", name="getallNews")
+     */
+
+    //Retourne toute les news au format json
+    public function getAllNews()
+    {
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+        //je recupère la listes de toutes les news
+        $news = $this->getDoctrine()->getRepository(News::class)->findAll();
+
+
+        //je les renvoi au format json
+        return $this->json($news);
+    }
 
 }
