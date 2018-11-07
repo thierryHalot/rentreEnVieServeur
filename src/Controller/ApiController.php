@@ -6,6 +6,7 @@ use App\Entity\BlackList;
 use App\Entity\HeaderMsg;
 use App\Entity\Msg;
 use App\Entity\News;
+use App\Entity\Recherche;
 use App\Entity\TypeUser;
 use App\Repository\MsgRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -698,5 +699,127 @@ class ApiController extends AbstractController
 
     }
 
-    
+    /**
+     * @Route("/api/postPreferenceUser/{idUser}", name="postPreferenceUser")
+     */
+
+    //cette fonction permet d'insérer des préferences correspondant a un utilisateur
+    public function postPreferenceUser($idUser,Request $request){
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        //je récupère l'utilisateur
+
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+        $reponse = new  Response();
+        
+        //je teste si l'utilisateur existe et que je reçois bien des données
+
+        if(!empty($user) && !empty($request) && $request != null){
+
+            //je vérifie si il n'a pas deja des préférence enregistrer
+
+            $preference = $this->getDoctrine()->getRepository(Recherche::class)->findOneBy(["recherchant_id" => $idUser]);
+
+            $entityManager = $this->getDoctrine()->getManager();
+
+
+            //je recupères les imformations envoyé que je stocke dans des variables
+
+            $sexe = $request->get('sexe');
+            $age = $request->get('age');
+            $fumeur = $request->get('fumeur');
+            $musique = $request->get('musique_favoris');
+            $club = $request->get('club_favoris');
+            $statut = $request->get('statut');
+
+            //je remplie mon tableau suivant ce que l'uttilisateur a rechercher
+            $tableauRecherche = array();
+
+            if($sexe != null){
+
+                $tableauRecherche['sexe'] = $sexe;
+            }
+
+            if($age != null){
+
+                $tableauRecherche['age'] = $age;
+            }
+
+            if($fumeur != null){
+
+                $tableauRecherche['fumeur'] = $fumeur;
+            }
+
+            if($musique != null){
+
+                $tableauRecherche['musique_favoris'] = $musique;
+            }
+
+            if($club != null){
+
+                $tableauRecherche['club_favoris'] = $club;
+            }
+
+            if($statut != null){
+
+                $idStatut = $this->getDoctrine()->getRepository(TypeUser::class)->findOneBy(["role" => $statut]);
+                $tableauRecherche['type_user_id'] = $idStatut;
+            }
+
+
+            //je recherche tous les utilisateur qui correspond à la recherche en donnant a manger mon tableau
+            $resultatRecherche = $this->getDoctrine()
+                ->getRepository(\App\Entity\User::class)
+                ->findBy($tableauRecherche);
+
+            //si ces préférences sont vide alors je vais les crées
+            if(empty($preference)){
+
+                $preference = new Recherche();
+
+                $preference->setSexe($sexe);
+                $preference->setAge($age);
+                $preference->setFumeur($fumeur);
+                $preference->setMusiqueFavoris($musique);
+                $preference->setClubFavoris($club);
+                $preference->setStatut($statut);
+                $preference->setRecherchantId($user);
+                $preference->setResultatRecherche(json_encode($resultatRecherche));
+
+                $entityManager->persist($preference);
+                $entityManager->flush();
+                $reponse->setStatusCode('200');
+
+                //si l'utilisateur a deja des préférence enregistré alors je met à jour ces préférences avec les imformations envoyées
+            }else{
+
+                $preference->setSexe($sexe);
+                $preference->setAge($age);
+                $preference->setFumeur($fumeur);
+                $preference->setMusiqueFavoris($musique);
+                $preference->setClubFavoris($club);
+                $preference->setStatut($statut);
+                $preference->setRecherchantId($user);
+                $preference->setResultatRecherche($resultatRecherche);
+
+                $entityManager->persist($preference);
+                $entityManager->flush();
+                $reponse->setStatusCode('200');
+            }
+        }else{
+
+            $reponse->setStatusCode('404');
+
+
+        }
+
+return $reponse;
+    }
+
+
+
+
 }
