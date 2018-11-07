@@ -462,7 +462,7 @@ class ApiController extends AbstractController
         $blacklist = $this->getDoctrine()->getRepository(BlackList::class)->find($idblacklist);
 
         //si ma blacklist existe alors je la supprime et je renvoi un statut 200
-if (!empty($blacklist)){
+        if (!empty($blacklist)){
 
     //j'insere les données
     $entityManager = $this->getDoctrine()->getManager();
@@ -471,11 +471,11 @@ if (!empty($blacklist)){
 
     $reponse->setStatusCode('200');
 
-}else{
+        }else{
 
-    $reponse->setStatusCode('400');
-}
-        //je les renvoi au format json
+    $reponse->setStatusCode('404');
+        }
+
         return $reponse;
     }
 
@@ -523,4 +523,126 @@ if (!empty($blacklist)){
        //je retourne la conversation au format json
         return $this->json($conversation);
     }
+
+
+
+    /**
+     * @Route("/api/postMsg/{idEmetteur}/{idRecepteur}", name="postMsg")
+     */
+
+    //cette fonction permet de poster un nouveaux message à un utilisateur
+    public function postMsgUser($idEmetteur,$idRecepteur, Request $request){
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        //je récupère les deux uttilisateur qui communique entre eux
+
+        $userEmetteur = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idEmetteur);
+
+        $userRecepteur = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idRecepteur);
+
+        $entityManager = $this->getDoctrine()->getManager();
+
+        $reponse = new Response();
+
+
+
+
+        //je verifie si ils existent bien en bdd
+        if(!empty($userEmetteur) && !empty($userRecepteur)){
+
+            //je tente de récupéré une éventuel conversation en cour entre l'emetteur et le recepteur
+
+            $headerEmetteur = $this->getDoctrine()->getRepository(HeaderMsg::class)->findOneBy(["emetteur_id" => $idEmetteur , "recepteur_id" => $idRecepteur ]);
+
+
+            //objet du message correspond aux pseudo du membre
+            $objet = $userEmetteur->getPseudo();
+
+            //le contenu lui est récupéré par rapport aux donné envoyé
+            $contenu = $request->get("contenu");
+
+
+            //la date courrante
+            $currentDate = new \DateTime();
+
+            //si la conversation existe
+            if(!empty($headerEmetteur)){
+
+
+
+            //je crée mon mon message avec les donnée recupéré
+            $msg = new Msg();
+
+            $msg->setMsgId($headerEmetteur);
+
+            $msg->setObjet($objet);
+
+            $msg->setContenu($contenu);
+
+            //je lui affecte la date courante
+
+            $msg->setDate($currentDate);
+
+            //je persiste mon message
+
+            $entityManager->persist($msg);
+
+            $entityManager->flush();
+
+            $reponse->setStatusCode('200');
+
+            //si la conversation n'existe pas alors je vais la crée
+
+            }else{
+
+                //je crée l'entete du msg
+                $headerEmetteur = new HeaderMsg();
+
+                $headerEmetteur->setDate($currentDate);
+                $headerEmetteur->setEmetteurId($userEmetteur);
+                $headerEmetteur->setRecepteurId($userRecepteur);
+
+                //par default le msg n'est pas supprimmer donc je lui met une valeur 0
+                $headerEmetteur->setIsDel(0);
+
+                $entityManager->persist($headerEmetteur);
+
+
+                //je crée mon mon message avec les donnée recupéré
+                $msg = new Msg();
+
+                $msg->setMsgId($headerEmetteur);
+
+                $msg->setObjet($objet);
+
+                $msg->setContenu($contenu);
+
+                //je lui affecte la date courante
+
+                $msg->setDate($currentDate);
+
+                //je persiste mon message
+
+                $entityManager->persist($msg);
+
+                $entityManager->flush();
+
+                $reponse->setStatusCode('200');
+            }
+
+        }else{
+
+            $reponse->setStatusCode('404');
+        }
+
+
+
+
+        return $reponse;
+
+
+    }
+
 }
