@@ -996,4 +996,58 @@ return $reponse;
 //je renvoi son role au format json
         return $this->json($role);
     }
+
+    /**
+     * @Route("/api/postRoleUser/{idUser}", name="postRoleUser")
+     */
+    //cette fonction permet de d'affecter un role à un membre
+    public function postRoleUser($idUser, Request $request){
+
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        $reponse = new  Response();
+        //je recupere l'utilisateur par rapport a l'id
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+        $entityManager = $this->getDoctrine()->getManager();
+
+        //je recupere les donné envoyé et je recherche le role par rapport a ses donées
+        $statut = $request->get('statut');
+        $role = $this->getDoctrine()->getRepository(TypeUser::class)->findOneBy(["role" => $statut]);
+
+        //je teste si l'utilisateur et le role existe
+        if(!empty($user) && !empty($role)){
+
+            //je tente de verifier si l'uttilisateur possede deja un role
+           $currentRole = $user->getTypeUserId();
+
+           //si l'uttilisateur n'a pas de role je le crée sinon je retourne un message d'erreur
+           if ($currentRole === null) {
+
+               //j'affecte le role a l'uttilisateur et je le persiste
+               $user->setTypeUserId($role);
+
+               $entityManager->persist($user);
+
+               $entityManager->flush();
+
+               //je renvoi un statut 200
+               $reponse->setStatusCode('200');
+
+
+           }else{
+
+               $reponse->setStatusCode('404');
+
+           }
+           //si le role ou l'uttilisateur n'existe pas je renvoi un message d'erreur
+        }else{
+
+            $reponse->setStatusCode('404');
+        }
+
+        return $reponse;
+    }
 }
