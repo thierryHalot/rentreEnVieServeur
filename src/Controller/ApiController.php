@@ -645,4 +645,37 @@ class ApiController extends AbstractController
 
     }
 
+
+    /**
+     * @Route("/api/GetHeaderMsg/{idUser}", name="getHeaderMsg")
+     */
+
+    //cette fonction retourne toutes les entete de message correspondant a un utilisateur
+    public function getAllHeaderMsgUser($idUser){
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        //je récupère l'utilisateur
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+        //si mon utilisateur existe
+        if(!empty($user)){
+
+            //je récupere toute les entete des conversation de cette utilisateur
+            $headerMsg = $this->getDoctrine()->getRepository(HeaderMsg::class)->findBy(["emetteur_id" => $idUser]);
+
+
+
+//si il n'existe pas je retourne null
+        }else{
+
+            $headerMsg = null;
+
+        }
+
+//j'envoi les données au format json
+        return $this->json($headerMsg);
+
+}
 }
