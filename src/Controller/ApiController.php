@@ -966,4 +966,34 @@ return $reponse;
 
             return $reponse;
         }
+
+    /**
+     * @Route("/api/getRoleUser/{idUser}", name="getRoleUser")
+     */
+
+    //fonction qui retourne le role d'un membre
+    public function getRoleUser($idUser){
+
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        //je recupere l'utilisateur par rapport a l'id
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+
+        //je teste si il existe
+         if(!empty($user)){
+            //si il existe je recupere son role
+            $role = $user->getTypeUserId();
+
+            }else{
+    //sinon il n'y pas de role
+            $role = null;
+
+            }
+
+//je renvoi son role au format json
+        return $this->json($role);
+    }
 }
