@@ -714,7 +714,7 @@ class ApiController extends AbstractController
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
 
         $reponse = new  Response();
-        
+
         //je teste si l'utilisateur existe et que je reçois bien des données
 
         if(!empty($user) && !empty($request) && $request != null){
@@ -820,6 +820,150 @@ return $reponse;
     }
 
 
+    /**
+     * @Route("/api/getPreference/{idUser}", name="getPreferenceUser")
+     */
+
+    //cette fonction renvoi les preference d'un utilisateur
+    public function getPreferenceUsers($idUser){
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+        //je verifie si l'utilisateur existe
+        if(!empty($user)){
+
+            //je tente de recuperer ces préference, renvera null si elle n'existe pas
+            $preference = $this->getDoctrine()->getRepository(Recherche::class)->findBy(["recherchant_id" => $idUser]);
+
+        }else{
+
+            $preference = null;
+        }
 
 
+
+        //je les renvoi au format json
+        return $this->json($preference);
+
+    }
+
+
+    /**
+     * @Route("/api/putPreference/{idUser}", name="putPreferenceUser")
+     */
+
+    //cette fonction met a jour les preference d'un utilisateur
+    public function putPreferenceUser($idUser, Request $request){
+
+
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        //je récupère l'utilisateur
+
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+        $reponse = new  Response();
+
+        //je teste si l'utilisateur existe et que je reçois bien des données
+
+        if(!empty($user) && !empty($request) && $request != null) {
+
+            //je vérifie si il n'a pas deja des préférence enregistrer
+
+            $preference = $this->getDoctrine()->getRepository(Recherche::class)->findOneBy(["recherchant_id" => $idUser]);
+
+            $entityManager = $this->getDoctrine()->getManager();
+
+
+            //je recupères les imformations envoyé que je stocke dans des variables
+
+            $sexe = $request->get('sexe');
+            $age = $request->get('age');
+            $fumeur = $request->get('fumeur');
+            $musique = $request->get('musique_favoris');
+            $club = $request->get('club_favoris');
+            $statut = $request->get('statut');
+
+            //je remplie mon tableau suivant ce que l'uttilisateur a rechercher
+            $tableauRecherche = array();
+
+            if ($sexe != null) {
+
+                $tableauRecherche['sexe'] = $sexe;
+            }
+
+            if ($age != null) {
+
+                $tableauRecherche['age'] = $age;
+            }
+
+            if ($fumeur != null) {
+
+                $tableauRecherche['fumeur'] = $fumeur;
+            }
+
+            if ($musique != null) {
+
+                $tableauRecherche['musique_favoris'] = $musique;
+            }
+
+            if ($club != null) {
+
+                $tableauRecherche['club_favoris'] = $club;
+            }
+
+            if ($statut != null) {
+
+                $idStatut = $this->getDoctrine()->getRepository(TypeUser::class)->findOneBy(["role" => $statut]);
+                $tableauRecherche['type_user_id'] = $idStatut;
+            }
+
+
+            //je recherche tous les utilisateur qui correspond à la recherche en donnant a manger mon tableau
+            $resultatRecherche = $this->getDoctrine()
+                ->getRepository(\App\Entity\User::class)
+                ->findBy($tableauRecherche);
+
+
+            //si ces préference ne sont pas vide, c'est quelle existe donc je les mets a jour
+            if(!empty($preference)){
+
+
+                $preference->setSexe($sexe);
+                $preference->setAge($age);
+                $preference->setFumeur($fumeur);
+                $preference->setMusiqueFavoris($musique);
+                $preference->setClubFavoris($club);
+                $preference->setStatut($statut);
+                $preference->setRecherchantId($user);
+                $preference->setResultatRecherche($resultatRecherche);
+
+                $entityManager->persist($preference);
+                $entityManager->flush();
+                $reponse->setStatusCode('200');
+
+
+            //si elle n'existe pas, j'envoi un message d'erreur
+            }else{
+
+
+                $reponse->setStatusCode('404');
+
+            }
+
+
+        }else{
+
+            $reponse->setStatusCode('404');
+
+
+        }
+
+            return $reponse;
+        }
 }
