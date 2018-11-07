@@ -678,4 +678,25 @@ class ApiController extends AbstractController
         return $this->json($headerMsg);
 
 }
+
+    /**
+     * @Route("/api/getAllHeaderMsg", name="getAllHeaderMsg")
+     */
+
+    //cette fonction renvoi toutes les entetes de msg de tous les utilisateur au format json
+    public function getAllHeaderMsgUsers(){
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+
+        //je recupere toutes les entetes de message en bdd
+        $allHeaderMsg = $this->getDoctrine()->getRepository(HeaderMsg::class)->findAll();
+
+        //je les renvoi au format json
+        return $this->json($allHeaderMsg);
+
+    }
+
+    
 }
