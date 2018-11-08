@@ -22,10 +22,8 @@ class ApiController extends AbstractController
     /**
      * @Route("/api/", name="api")
      */
-    public function index($id)
+    public function index()
     {
-
-        dump($id);
         return $this->render('api/index.html.twig', [
             'controller_name' => 'ApiController',
         ]);
@@ -92,15 +90,15 @@ class ApiController extends AbstractController
             $mail = $request->get('mail');
             $pseudo = $request->get('pseudo');
             $mdp = $request->get('mdp');
-            $fumeur = $request->get('fumeur');
+            $fumeur = json_decode($request->get('fumeur'),true);
             $clubFavoris = $request->get('clubFavoris');
             $musiqueFavoris = $request->get('musiqueFavoris');
             $img = $request->get('img');
-            $modeSortie = $request->get('modeSortie');
+            $modeSortie = json_decode($request->get('modeSortie'),true);
             $perimetre = $request->get('perimetre');
             $latitude = $request->get('latitude');
             $longitude = $request->get('longitude');
-            $isDel = $request->get('isDel');
+            $isDel = json_decode($request->get('isDel'),true);
 
             //je verifie les valeurs envoyé une a une, si elle ne sont pas vide et null, si elle rentre dans ces conditions
             // alors je peut les affectées à mon entité
@@ -151,7 +149,7 @@ class ApiController extends AbstractController
                 $user->setMdp($mdp);
             }
 
-            if ($fumeur != null && !empty($fumeur)) {
+            if ($fumeur != null && $fumeur === 1 || $fumeur === 0) {
 
                 $user->setFumeur($fumeur);
             }
@@ -168,7 +166,7 @@ class ApiController extends AbstractController
 
                 $user->setImg($img);
             }
-            if ($modeSortie != null && !empty($modeSortie)) {
+            if ($modeSortie != null && $modeSortie === 1 || $modeSortie === 0) {
 
                 $user->setModeSortie($modeSortie);
             }
@@ -184,7 +182,7 @@ class ApiController extends AbstractController
 
                 $user->setLongitude($longitude);
             }
-            if ($isDel != null && !empty($isDel)) {
+            if ($isDel != null && $isDel === 1 || $isDel === 0) {
 
                 $user->setIsDel($isDel);
             }
@@ -202,6 +200,7 @@ class ApiController extends AbstractController
         }else{
 
             $reponse->setStatusCode('404');
+            $reponse->setContent("Erreur : l'utilisateur n'existe pas ou les donné envoyé sont incorecte");
 
         }
 
@@ -239,15 +238,15 @@ class ApiController extends AbstractController
             $mail = $request->get('mail');
             $pseudo = $request->get('pseudo');
             $mdp = $request->get('mdp');
-            $fumeur = $request->get('fumeur');
+            $fumeur = json_decode($request->get('fumeur'),true);
             $clubFavoris = $request->get('clubFavoris');
             $musiqueFavoris = $request->get('musiqueFavoris');
             $img = $request->get('img');
-            $modeSortie = $request->get('modeSortie');
+            $modeSortie = json_decode($request->get('modeSortie'),true);
             $perimetre = $request->get('perimetre');
             $latitude = $request->get('latitude');
             $longitude = $request->get('longitude');
-            $isDel = $request->get('isDel');
+            $isDel = json_decode($request->get('isDel'),true);
 
 //j'affecte les donné a mon nouvelle utilisateur
             $user->setNom($nom);
@@ -281,6 +280,7 @@ class ApiController extends AbstractController
         }else{
 
             $reponse->setStatusCode('404');
+            $reponse->setContent("Erreur : le role n'existe pas, ou les donné envoyé sont vide ");
 
         }
 
@@ -341,33 +341,41 @@ class ApiController extends AbstractController
         //je vérifie la blacklist existe et que je récupère des données
         if (!empty($blacklist && $request->getContent())){
 
-            $date = new \DateTime($request->get('date'));
+
             $userBloquer = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($request->get("bloquer_id"));
 
-            //je vérifie si la date envoyé n'est pas null ou vide
-            if ($date != null && !empty($date)) {
-                $blacklist->setDate($date);
-            }
+
+
 
             //je verifie si le nouvelle utilisateur existe en bdd
             if(!empty($userBloquer)){
 
                 $blacklist->setBloquerId($userBloquer);
+                $blacklist->setDate(new \DateTime());
+
+                //j'insere les données
+                $entityManager = $this->getDoctrine()->getManager();
+                $entityManager->persist($blacklist);
+                $entityManager->flush();
+
+                //je renvoi un status 200
+                $reponse->setStatusCode('200');
+
+                //si l'utilisateur a bloquer n'existe pas, je renvoi une erreurs
+            }else{
+
+                $reponse->setStatusCode('404');
+                $reponse->setContent("Erreur : l'utilisateur à bloquer n'existe pas.");
 
             }
 
-            //j'insere les données
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($blacklist);
-            $entityManager->flush();
 
-            //je renvoi un status 200
-            $reponse->setStatusCode('200');
 
             //sinon je renvoi un code d'erreur
         }else{
 
             $reponse->setStatusCode('404');
+            $reponse->setContent("Erreur : cette utilisateur n'est pas blacklister ou les données envoyé sont vide.");
         }
 
 
@@ -395,7 +403,7 @@ class ApiController extends AbstractController
         if($request->getContent()){
 
 
-            $date = new \DateTime($request->get('date'));
+
 
             //je tente de récupèrer les utiliszteur correspondant aux données envoyé
             $userBloquer = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($request->get("bloquer_id"));
@@ -407,7 +415,7 @@ class ApiController extends AbstractController
 
                 $blacklist->setBloquerId($userBloquer);
                 $blacklist->setBloquandId($userBloquand);
-                $blacklist->setDate($date);
+                $blacklist->setDate(new \DateTime());
 
                 //je verifie si l'utilisateur n'a pas déja été blacklister
                 $blacklistVerif = $this->getDoctrine()->getRepository(BlackList::class)->findOneBy(["bloquand_id" => $userBloquand->getId(), "bloquer_id" => $userBloquer->getId() ]);
@@ -428,6 +436,7 @@ class ApiController extends AbstractController
              }else{
 
                  $reponse->setStatusCode('404');
+                 $reponse->setContent("l'utilisateur a deja été blacklister");
              }
 
 
@@ -435,6 +444,7 @@ class ApiController extends AbstractController
             }else{
 
                 $reponse->setStatusCode('404');
+                $reponse->setContent("Erreur : un ou plusieurs des utilisateurs selectionner n'existe pas");
 
             }
 
@@ -442,6 +452,7 @@ class ApiController extends AbstractController
         }else{
 
             $reponse->setStatusCode('404');
+            $reponse->setStatusCode("Erreur : je n'ai reçu aucune donné à traiter" );
 
         }
 
@@ -476,6 +487,7 @@ class ApiController extends AbstractController
         }else{
 
     $reponse->setStatusCode('404');
+    $reponse->setContent("cette utilisateur n'existe pas en blacklist");
         }
 
         return $reponse;
@@ -495,7 +507,7 @@ class ApiController extends AbstractController
         header("Access-Control-Allow-Origin: *");
 
 
-
+    $reponse = new Response();
 
         $headerEmetteur = $this->getDoctrine()->getRepository(HeaderMsg::class)->findOneBy(["emetteur_id" => $idEmetteur , "recepteur_id" => $idRecepteur ]);
 
@@ -516,7 +528,8 @@ class ApiController extends AbstractController
             //dans tous les autre cas, la conversation n'existe pas
         }else{
 
-    $conversation = null;
+    $reponse->setStatusCode("404");
+    $reponse->setContent("Erreur : la conversation n'existe pas");
         }
 
 
@@ -637,6 +650,7 @@ class ApiController extends AbstractController
         }else{
 
             $reponse->setStatusCode('404');
+            $reponse->setContent("Les utilisateur n'existe pas en base de donné");
         }
 
 
@@ -880,7 +894,7 @@ class ApiController extends AbstractController
         }else{
 
             $reponse->setStatusCode('404');
-
+            $reponse->setContent("Erreur : l'utilisateur n'existe pas ou je ne reçois aucune données");
 
         }
 
@@ -952,7 +966,7 @@ return $reponse;
 
             $sexe = $request->get('sexe');
             $age = $request->get('age');
-            $fumeur = $request->get('fumeur');
+            $fumeur = json_decode($request->get('fumeur'),true);
             $musique = $request->get('musique_favoris');
             $club = $request->get('club_favoris');
             $statut = $request->get('statut');
@@ -1021,6 +1035,7 @@ return $reponse;
 
 
                 $reponse->setStatusCode('404');
+                $reponse->setContent("Erreur :cette utilisateur n'a actuellement aucune préférence, il faut don faire une insertion plutot qu'une mise a jour");
 
             }
 
@@ -1028,6 +1043,7 @@ return $reponse;
         }else{
 
             $reponse->setStatusCode('404');
+            $reponse->setContent("Erreur : l'utilisateur n'existe pas ou je ne reçois aucune données");
 
 
         }
@@ -1108,12 +1124,14 @@ return $reponse;
            }else{
 
                $reponse->setStatusCode('404');
+               $reponse->setContent("Erreur : Un role à deja été attribué à cette utilisateur");
 
            }
            //si le role ou l'uttilisateur n'existe pas je renvoi un message d'erreur
         }else{
 
             $reponse->setStatusCode('404');
+            $reponse->setContent("Erreur : l'utilisateur ou le role n'existe pas");
         }
 
         return $reponse;
