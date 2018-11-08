@@ -1014,8 +1014,8 @@ return $reponse;
         $entityManager = $this->getDoctrine()->getManager();
 
         //je recupere les donné envoyé et je recherche le role par rapport a ses donées
-        $statut = $request->get('statut');
-        $role = $this->getDoctrine()->getRepository(TypeUser::class)->findOneBy(["role" => $statut]);
+        $newRole = $request->get('role');
+        $role = $this->getDoctrine()->getRepository(TypeUser::class)->findOneBy(["role" => $newRole]);
 
         //je teste si l'utilisateur et le role existe
         if(!empty($user) && !empty($role)){
@@ -1051,7 +1051,62 @@ return $reponse;
         return $reponse;
     }
 
+    /**
+     * @Route("/api/putRoleUser/{idUser}", name="putRoleUser")
+     */
+    //cette fonction permet de mettre a jour le role d'un membre
+    public function putRoleUser($idUser, Request $request){
 
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        $reponse = new  Response();
+        //je recupere l'utilisateur par rapport a l'id
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+        $entityManager = $this->getDoctrine()->getManager();
+
+        //je recupere les donné envoyé et je recherche le role par rapport a ses donées
+        $newRole = $request->get('role');
+        $role = $this->getDoctrine()->getRepository(TypeUser::class)->findOneBy(["role" => $newRole]);
+
+        //je teste si l'utilisateur et le role existe
+        if(!empty($user) && !empty($role)){
+
+            //je tente de verifier si l'uttilisateur possede deja un role
+            $currentRole = $user->getTypeUserId();
+
+            //si l'uttilisateur a deja un role alors je peut le mettre a jour
+            if ($currentRole !== null) {
+
+                //je met a jour le role de l'utilisateur et je le persiste
+                $user->setTypeUserId($role);
+
+                $entityManager->persist($user);
+
+                $entityManager->flush();
+
+                //je renvoi un statut 200
+                $reponse->setStatusCode('200');
+
+            //sinon je retourne un message d'erreur
+            }else{
+
+                $reponse->setStatusCode('404');
+                $reponse->setContent("l'utilisateur n'a actuellement aucun role, il faut donc d'abord lui crée un role avant de le mettre à jour !!!");
+
+            }
+            //si le role ou l'uttilisateur n'existe pas je renvoi un message d'erreur
+        }else{
+
+            $reponse->setStatusCode('404');
+            $reponse->setContent("<p>Mise à jour impossible, le role ou l'utilisateur n'existe pas !!!!<br>
+            la clé du tableau a renvoyé est : role, la valeur doit etre sam ou consomateur. </p>");
+        }
+
+        return $reponse;
+    }
     /**
      * @Route("/api/getStatutUser/{idUser}", name="getStatutUser")
      */
