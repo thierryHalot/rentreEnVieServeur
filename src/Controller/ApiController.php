@@ -1050,4 +1050,41 @@ return $reponse;
 
         return $reponse;
     }
+
+
+    /**
+     * @Route("/api/getStatutUser/{idUser}", name="getStatutUser")
+     */
+
+    //fonction qui retourne le statut d'un membre
+    public function getStatutUser($idUser){
+
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        //je recupere l'utilisateur par rapport a l'id
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+
+        //je teste si il existe
+        if(!empty($user)){
+            //si il existe je recupere son statut
+
+
+            $statut = array(
+
+               "mode_sortie" => $user->getModeSortie()
+
+            );
+
+        }else{
+            //sinon il n'y pas de statut
+            $statut = null;
+
+        }
+
+//je renvoi son role au format json
+        return $this->json($statut);
+    }
 }
