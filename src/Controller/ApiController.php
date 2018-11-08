@@ -8,6 +8,7 @@ use App\Entity\Msg;
 use App\Entity\News;
 use App\Entity\Recherche;
 use App\Entity\TypeUser;
+use App\Entity\Vote;
 use App\Repository\MsgRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -1189,5 +1190,51 @@ return $reponse;
 
 //je renvoi son statut au format json
         return $reponse;
+    }
+
+
+    /**
+     * @Route("/api/getNoteUser/{idUser}", name="getNoteUser")
+     */
+
+//fonction qui permet de renvoyé toutes les notes d'un membre au format json
+    public function getNoteUser($idUser){
+
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+        
+        //je recupere l'utilisateur
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+
+        $response = new Response();
+
+        //je teste si il existe
+        if(!empty($user)){
+
+            $note = $this->getDoctrine()->getRepository(Vote::class)->findBy(["voter_id" => $idUser]);
+
+
+            //si l'utilisateur n'a aucune note, alors je retourne null
+            if (empty($note)){
+
+
+                $note = null;
+
+            }
+
+            //si il n'existe pas, je retourne un message d'erreur;
+        }else{
+
+            $response->setStatusCode('404');
+
+            $response->setContent("erreur : l'utilisateur n'existe pas");
+
+            return $response;
+        }
+
+        return $this->json($note);
+
     }
 }
