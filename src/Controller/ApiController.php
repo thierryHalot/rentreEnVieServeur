@@ -1203,7 +1203,7 @@ return $reponse;
 
         //dans les entete de la requete je permet l'accses a tous les supports
         header("Access-Control-Allow-Origin: *");
-        
+
         //je recupere l'utilisateur
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
 
@@ -1236,5 +1236,88 @@ return $reponse;
 
         return $this->json($note);
 
+    }
+
+    /**
+     * @Route("/api/postNoteUser/{idUserVotant}/{idUserVoter}", name="postNoteUser")
+     */
+
+//fonction qui permet d'insérer une note a un membre
+    public function postNoteUser($idUserVotant,$idUserVoter,Request $request){
+
+        //je recupere les utilisateurs par rapport a leurs id
+        $userVotant = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUserVotant);
+
+        $userVoter = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUserVoter);
+
+        $entityManager = $this->getDoctrine()->getManager();
+
+        $reponse = new Response();
+
+        //je verifie si les deux utilisateur existe
+        if(!empty($userVotant) && !empty($userVoter))
+        {
+            //je tente de savoir si l'utilisateur a déjé voter
+            $vote = $this->getDoctrine()->getRepository(Vote::class)->findOneBy(["voter_id" => $idUserVoter, "votant_id" => $idUserVotant ]);
+
+            //si je ne récupère aucune imformation c'est que l'utilisateur n'a jamais voter
+            if (empty($vote)){
+
+                $note = json_decode($request->get("note"),true);
+
+                //si je recupere bien des données et que c'est bien un integer
+                if ($note !== null && is_int($note)) {
+
+                    //je recherche tous les votes de cette uttilisateur
+                    $nombreVote = count($this->getDoctrine()->getRepository(Vote::class)->findBy(["voter_id" => $idUserVotant]));
+                    $vote = new Vote();
+
+                    //je lui affecte la date courante ainsi que les imformation concernant le vote
+                    $vote->setDate(new \DateTime());
+                    $vote->setVoterId($userVoter);
+                    $vote->setVotantId($userVotant);
+                    $vote->setNote($note);
+                    $vote->setNbrVote($nombreVote);
+
+                    //je persiste le vote et retourne un statut 200
+
+                    $entityManager->persist($vote);
+
+                    $entityManager->flush();
+
+                    $reponse->setStatusCode('200');
+
+                }else{
+
+
+                    $reponse->setStatusCode("404");
+                    $reponse->setContent("erreur : les données envoyé sont incorecte ");
+
+                }
+
+
+
+                //sinon l'utilisateur a déja voter, je renvoi donc un message d'erreur
+            }else{
+
+                $reponse->setStatusCode("404");
+                $reponse->setContent("l'utilisateur à déja voter ce membres, il ne faut donc pas faire une insertion, il faut faire une mise a jour");
+
+
+            }
+
+
+        //si ils existent pas je renvoi un message d'erreur
+        }else{
+
+            $reponse->setStatusCode("404");
+            $reponse->setContent("Information incorecte :Un ou plusieurs des uttilisateurs recherchés, n'existent pas en base de donnée");
+
+        }
+
+
+
+
+        return $reponse;
     }
 }
