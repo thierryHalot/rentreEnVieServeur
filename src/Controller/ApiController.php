@@ -701,6 +701,73 @@ class ApiController extends AbstractController
     }
 
     /**
+     * @Route("/api/putHeaderMsgUser/{idEmetteur}/{idRecepteur}", name="putHeaderMsgUser")
+     */
+
+   //cette fonction permet de mettre a jour la valeur is_del dans l'entete de message d'un utilisateur emetteur
+    public function putHeaderMsgUser($idEmetteur,$idRecepteur,Request $request){
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+        $reponse = new Response();
+        //je recupere les deux utilisateurs
+        $userEmetteur = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idEmetteur);
+
+        $userRecepteur = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idRecepteur);
+
+        $entityManager = $this->getDoctrine()->getManager();
+        //je vérifie si il existe en bdd sinon j'envoi un message d'erreur
+        if(!empty($userEmetteur) && !empty($userRecepteur)){
+
+            $headerEmetteur = $this->getDoctrine()->getRepository(HeaderMsg::class)->findOneBy(["emetteur_id" => $idEmetteur , "recepteur_id" => $idRecepteur ]);
+
+            //je verifie que l'emmeteur a deja envoyé un message au recepteur sinon j'envoi un message d'erreur
+            if (!empty($headerEmetteur)){
+
+                //je recupere la valeur envoyé
+                $isDel = json_decode($request->get("is_del"),true);
+
+                //je verifie que les données envoyées sois correcte sinon j'envoi un msg d'erreur
+                if(!empty($isDel) && $isDel !== null && $isDel === 1 || $isDel === 0) {
+
+                    //je met a jour l'entete de l'emetteur que je persiste, j'envoi un statut 200
+                    $headerEmetteur->setIsDel($isDel);
+
+                    $entityManager->persist($headerEmetteur);
+
+                    $entityManager->flush();
+
+                    $reponse->setStatusCode("200");
+                }else{
+
+                    $reponse->setStatusCode("404");
+                    $reponse->setContent("Erreur : les données envoyé sont incorecte , rappelle la clé est is_del, la valeur est soit 1 si l'utilisateur à supprimmer son message, soit 0");
+
+                }
+
+            }else{
+
+                $reponse->setStatusCode("404");
+                $reponse->setContent("Erreur : l'emmeteur n'a jamais envoyé de message au recepteur");
+
+            }
+
+        }else{
+
+            $reponse->setStatusCode("404");
+            $reponse->setContent("Erreur : Un ou plusieurs des utilisateurs n'existe pas en bdd");
+
+        }
+
+        return $reponse;
+
+
+
+
+    }
+
+    /**
      * @Route("/api/postPreferenceUser/{idUser}", name="postPreferenceUser")
      */
 
