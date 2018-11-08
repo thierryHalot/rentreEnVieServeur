@@ -1405,4 +1405,51 @@ return $reponse;
 
         return $reponse;
     }
+
+
+    /**
+     * @Route("/api/getAllPositions", name="getAllpositionsUser")
+     */
+
+    //cette fonction retourne toutes les position des utilisateur au format json
+    public function getAllpositions(){
+
+        //je recupere tous les uttilsateur
+        $users = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findAll();
+
+        //si il y a des utilisateur en bdd
+        if (!empty($users)){
+         //je declare un tableau d'utilisateurs
+        $positionUsers = array();
+
+        //je boucle pour récupéré les infos qui m'intéresse
+        foreach ($users as $user) {
+
+            $userPosition = array(
+
+                "id" => $user->getId(),
+                "pseudo" => $user->getPseudo(),
+                "longitude" => $user->getLongitude(),
+                "latitude" => $user->getLatitude(),
+                "perimetre" => $user->getPerimetre()
+
+            );
+
+            //jinsere mes utilisateurs
+            array_push($positionUsers, $userPosition);
+        }
+
+
+
+
+        }else{
+            //si j'ai rien bdd je retourne null
+            $positionUsers = null;
+        }
+
+//je renvoi mon tableau aux format json
+        return $this->json($positionUsers);
+
+
+    }
 }
