@@ -1084,7 +1084,55 @@ return $reponse;
 
         }
 
-//je renvoi son role au format json
+//je renvoi son statut au format json
         return $this->json($statut);
+    }
+
+
+    /**
+     * @Route("/api/putStatutUser/{idUser}", name="putStatutUser")
+     */
+
+    //fonction qui met a jour le statut d'un membre
+    public function putStatutUser($idUser, Request $request){
+
+
+        //dans les entete de la requete je permet l'accses a tous les supports
+        header("Access-Control-Allow-Origin: *");
+
+
+        //je recupere l'utilisateur par rapport a l'id
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+        $entityManager = $this->getDoctrine()->getManager();
+
+        $reponse = new Response();
+
+        //je recupère les données
+        $statut = json_decode($request->get('mode_sortie'),true);
+
+        //je teste si l'uttilisateur existe et si je reçois des données correcte, si tous en bon
+        if(!empty($user) && $statut !== null && $statut === 1 || $statut === 0){
+
+
+//je met a jour le status de l'uttilisateur, je le persiste et j'envois un statue 200
+        $user->setModeSortie($statut);
+
+        $entityManager->persist($user);
+
+        $entityManager->flush();
+
+            $reponse->setStatusCode('200');
+
+            //sinon j'envoi un message d'erreur
+        }else{
+            //sinon il n'y pas de statut
+            $reponse->setStatusCode('404');
+            $reponse->setContent("l'utilisateur n'existe pas ou les donné indiqué sont incorrecte");
+
+        }
+
+//je renvoi son statut au format json
+        return $reponse;
     }
 }
