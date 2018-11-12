@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Page de connexion !{% endblock %}
+
+{% block body %}
+
+    <div class="container connexion">
+<div class="offset-sm-4 col-sm-4">
+
+    <img class="img-fluid" src="https://via.placeholder.com/400s">
+     {%  if messageErreur is defined %}
+    <p style="color: red">
+        {{ messageErreur }}
+    </p>
+        {% endif %}
+
+    <form action="/VerifConnexion" method="post" style="margin-top: 10px ;">
+
+        <div class="form-group">
+            <label for="pseudo">Pseudo:</label>
+            <input type="text" class="form-control" id="exampleInputEmail1" name="pseudo" aria-describedby="emailHelp" placeholder="pseudo">
+
+        </div>
+        <div class="form-group">
+            <label for="psw">Mot de passe:</label>
+            <input type="password" class="form-control" id="psw" name="psw" placeholder="mot de passe">
+        </div>
+        <button type="submit" class="btn btn-primary float-sm-right">Connexion</button>
+
+    </form>
+    </div>
+    </div>
+{% endblock %}
