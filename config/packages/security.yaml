@@ -7,11 +7,17 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
+            pattern:  ^/
             anonymous: true
+            form_login:
+                login_path: /login
+                check_path: connexion
 
             # activate different ways to authenticate
 
-            # http_basic: true
+            #http_basic: true
+            logout:
+                path: /logout
             # https://symfony.com/doc/current/security.html#a-configuring-how-your-users-will-authenticate
 
             # form_login: true
@@ -20,5 +26,5 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
+        #- { path: ^/api, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
