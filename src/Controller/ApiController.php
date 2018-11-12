@@ -20,7 +20,7 @@ use Symfony\Component\Validator\Constraints\DateTime;
 class ApiController extends AbstractController
 {
     /**
-     * @Route("/api/", name="api")
+     * @Route("/api", name="api")
      */
     public function index()
     {
