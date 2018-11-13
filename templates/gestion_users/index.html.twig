@@ -3,18 +3,221 @@
 {% block title %}Hello {{ controller_name }}!{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    {%  if session.reponse is defined %}
+    <p style="color: red">{{ session.reponse }}</p>
+    {% endif %}
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code><a href="{{ 'src/Controller/GestionUsersController.php'|file_link(0) }}">src/Controller/GestionUsersController.php</a></code></li>
-        <li>Your template at <code><a href="{{ 'templates/gestion_users/index.html.twig'|file_link(0) }}">templates/gestion_users/index.html.twig</a></code></li>
-    </ul>
+
+
+
+<div class="container">
+    <!-- insertion d'un message pour prévenir que la mise a jour a bien été effectuer -->
+    {% for message in app.flashes('messageUpdateUser') %}
+        <div class='conteneurMessageUpdateUser offset-md-3 col-md-6'>
+            <p class='messageUpdateUser'>{{ message }}</p>
+            <button type='submit' id="buttonMessageUpdateUser">OK</button>
+        </div>
+    {% endfor %}
+    <div class="table-wrapper">
+        <div class="table-title">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h2>Gestion des utilisateurs :</h2>
+                </div>
+            </div>
+        </div>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th scope="col">Id</th>
+            <th scope="col">Nom</th>
+            <th scope="col">Prenom</th>
+            <th scope="col">Tel</th>
+            <th scope="col"></th>
+            <th scope="col">edit</th>
+            <th scope="col">detail</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for user in users %}
+        <tr>
+            <th scope="row">{{ user.id }}</th>
+            <td>{{ user.nom }}</td>
+            <td>{{ user.prenom }}</td>
+            <td>0{{ user.tel }}</td>
+
+            {% if user.isDel == 1 %}
+                <td>
+                    <i class="fas fa-ban" style="color: red;"></i>
+                </td>
+            {% else %}
+                <td></td>
+            {% endif %}
+            <td><button type="button" class="btn btn-primary fas fa-edit" data-toggle="modal" data-target="#updateUser{{ user.id }}"></button></td>
+            <td><button type="button" class="btn btn-primary fas fa-search" data-toggle="modal" data-target="#detailUser{{ user.id }}"></button></td>
+        </tr>
+            <!--  formulaire mise à jour d'un utilisateur-->
+            <div class="modal" id="updateUser{{ user.id }}">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="updateUser" method="post" action="/form/update/User/{{ user.id }}">
+
+                            <!-- Modal Header -->
+                            <div class="modal-header">
+                                <h4 class="modal-title">mise à jour d'un utilisateur</h4>
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            </div>
+
+                            <!-- Modal body formulaire mise à jour Diplome -->
+                            <div class="modal-body">
+                                <div class="form-group row">
+                                    <label for="nomUserUpdate" class="col-sm-4 col-form-label">Nom</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" class="form-control" name="nom" id="nomUserUpdate" value="{{ user.nom }}" required>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="prenomUserUpdate" class="col-sm-4 col-form-label">Prenom</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" class="form-control" name="prenom" id="prenomUserUpdate" value="{{ user.prenom }}" required>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="telUserUpdate" class="col-sm-4 col-form-label">Tel</label>
+                                    <div class="col-sm-8">
+                                        <input type="number" class="form-control" name="tel" id="telUserUpdate" value="{{ user.tel }}" required>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="mailUserUpdate" class="col-sm-4 col-form-label">Mail</label>
+                                    <div class="col-sm-8">
+                                        <input type="email" class="form-control" name="mail" value="{{ user.mail }}" id="mailUserUpdate">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="pseudoUserUpdate" class="col-sm-4 col-form-label">Pseudo</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" class="form-control" name="pseudo" id="pseudoUserUpdate" value="{{ user.pseudo }}" required>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="pswUserUpdate" class="col-sm-4 col-form-label">Mot de passe</label>
+                                    <div class="col-sm-8">
+                                        <input type="password" class="form-control" name="mdp" id="pswUserUpdate">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="selectBlockedUser" class="col-sm-4 col-form-label">Bloquer</label>
+                                        <select id="selectBlockedUser" class="col-sm-8" name="isDel">
+                                            <option value="1" >Oui</option>
+                                            <option value="0" >Non</option>
+                                        </select>
+                                </div>
+
+                            </div>
+
+                            <!-- Modal footer -->
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary float-right" id="btnUpdateUser">Mettre à jour</button>
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Fermer</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        <!-- Modal d'affichage du détail d'un utilisateur-->
+        <div class="modal" id="detailUser{{ user.id }}">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <!-- Modal Header -->
+                    <div class="modal-header">
+                        <h4 class="modal-title">information {{ user.pseudo }}</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+
+                    <!-- Modal body formulaire mise à jour Diplome -->
+                    <div class="modal-body">
+                        <div class="container-fluid">
+                            <dl class="row">
+                                <dt class="col-sm-6">En sortie ?</dt>
+
+                                {% if user.modeSortie == 1 %}
+                                    <dd class="col-sm-6">Oui</dd>
+                                {% else %}
+                                    <dd class="col-sm-6">Non</dd>
+                                {% endif %}
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Nom:</dt>
+                                <dd class="col-sm-6">{{ user.nom }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Role:</dt>
+                                {% if user.typeuserid.role is defined %}
+                                    <dd class="col-sm-6">{{ user.typeuserid.role }}</dd>
+                                {% else %}
+                                    <dd class="col-sm-6">Aucun role à afficher</dd>
+                                {% endif %}
+
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Prenom:</dt>
+                                <dd class="col-sm-6">{{ user.prenom }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Age:</dt>
+                                <dd class="col-sm-6">{{ user.age }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Pseudo:</dt>
+                                <dd class="col-sm-6">{{ user.pseudo }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Mail:</dt>
+                                <dd class="col-sm-6">{{ user.mail }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Tel:</dt>
+                                <dd class="col-sm-6">{{ user.tel }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Adresse:</dt>
+                                <dd class="col-sm-6">{{ user.adresse }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Fumeur?</dt>
+
+                                {% if user.fumeur == 1 %}
+                                    <dd class="col-sm-6">Oui</dd>
+                                {% else %}
+                                    <dd class="col-sm-6">Non</dd>
+                                {% endif %}
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Musique préféré:</dt>
+                                <dd class="col-sm-6">{{ user.musiqueFavoris }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Club préféré:</dt>
+                                <dd class="col-sm-6">{{ user.clubFavoris }}</dd>
+                            </dl>
+                            <dl class="row">
+                                <dt class="col-sm-6">Est-il bloqué?</dt>
+
+                                {% if user.isDel == 1 %}
+                                        <dd class="col-sm-6">Oui</dd>
+                                {% else %}
+                                    <dd class="col-sm-6">Non</dd>
+                                {% endif %}
+                            </dl>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
 </div>
 {% endblock %}
