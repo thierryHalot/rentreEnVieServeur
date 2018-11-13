@@ -182,7 +182,7 @@ class ApiController extends AbstractController
 
                 $user->setLongitude($longitude);
             }
-            if ($isDel != null && $isDel === 1 || $isDel === 0) {
+            if ($isDel != null && $isDel == 1 || $isDel == 0) {
 
                 $user->setIsDel($isDel);
             }
@@ -491,6 +491,7 @@ class ApiController extends AbstractController
         }
 
         return $reponse;
+
     }
 
 
@@ -874,7 +875,6 @@ class ApiController extends AbstractController
                 $entityManager->persist($preference);
                 $entityManager->flush();
                 $reponse->setStatusCode('200');
-
                 //si l'utilisateur a deja des préférence enregistré alors je met à jour ces préférences avec les imformations envoyées
             }else{
 
