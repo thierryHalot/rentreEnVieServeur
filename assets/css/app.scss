@@ -1,7 +1,46 @@
-@import "~bootstrap/scss/bootstrap";
+
 
 .connexion{
 
 margin-top: 2%;
 
 }
+
+.messageUpdateUser{
+
+  font-size: 15px;
+  color: white;
+  font-size: large;
+}
+
+.conteneurMessageUpdateUser{
+  margin-top: 3px;
+  margin-bottom: 3px;
+  background-color: #2963ff;
+  padding: 2% 2% 4% 2%;
+  border-radius: 5px;
+}
+
+.conteneurMessageUpdateUser button{
+
+
+  background-color: #2963ff !important;
+  color: white !important;
+  text-align:center !important;
+  padding: 0px !important;
+  border-right: 5px solid #2963ff!important;
+  border-left: 5px solid #2963ff !important;
+  float: right;
+  margin-top: 10px;
+
+
+}
+
+.conteneurMessageUpdateUser button:hover{
+
+  background-color: #153282 !important;
+  border-left-color: #153282 !important;
+  border-right-color: #153282 !important;
+}
+
+@import "~bootstrap/scss/bootstrap";
