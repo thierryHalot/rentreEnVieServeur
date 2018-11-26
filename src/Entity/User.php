@@ -343,4 +343,60 @@ class User
 
         return $this;
     }
+
+    public function getJson(){
+
+        $user = array(
+
+          "id" => $this->id,
+
+          "nom"=> $this->nom,
+
+          "prenom"=> $this->prenom,
+
+          "age"=>$this->age,
+
+          "sexe"=>$this->sexe,
+
+          "tel"=>$this->tel,
+
+          "adresse"=>$this->adresse,
+
+          "mail"=>$this->mail,
+
+          "pseudo"=>$this->pseudo,
+
+          "mdp"=>$this->mdp,
+
+          "fumeur"=>$this->fumeur,
+
+          "clubFavoris"=>$this->club_favoris,
+
+          "musiqueFavoris"=>$this->musique_favoris,
+
+          "modeSortie"=>$this->mode_sortie,
+
+          "perimetre"=>$this->perimetre,
+
+          "latitude" => $this->latitude,
+
+          "longitude"=> $this->longitude,
+
+          "isDel" => $this->is_del
+
+        );
+
+        if($this->getTypeUserId() !== null){
+
+            $user["type"] = $this->getTypeUserId()->getRole();
+
+        }else{
+
+            $user["type"] = null ;
+
+        }
+
+        return json_encode($user);
+
+    }
 }
