@@ -209,27 +209,31 @@ class ApiController extends AbstractController
     }
 
     /**
-     * @Route("api/post/user/{idRole}", name="apiPostUser")
+     * @Route("api/post/user", name="apiPostUser")
      */
 //fonction qui permet d'inserer un nouvelle utilisateur
-    public function apiPostUser($idRole,Request $request)
+    public function apiPostUser(Request $request)
     {
         //dans les entete de la requete je permet l'accses a tous les supports
-        header("Access-Control-Allow-Origin: *");
-
+        //header("Allow-Control-Allow-Origin: *");
+       // header('Access-Control-Allow-Origin: *');
+        //header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
         $reponse = new Response();
-
+        $reponse->headers->set("Access-Control-Allow-Origin",'*');
+        $reponse->headers->set('Access-Control-Allow-Credentials',true);
+        $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
         //je récupère le role a affecter à mon nouvelle utilisateur par rapport a son id
-        $role = $this->getDoctrine()->getRepository(TypeUser::class)->find($idRole);
+        //$role = $this->getDoctrine()->getRepository(TypeUser::class)->find($idRole);
 
-        //si mon role existe et que je récupere des données
-        if(!empty($role) && $request->getContent()) {
+        //existe et que je récupere des données
+        if($request->getContent()) {
 
             //j'instancie un nouvelle utilisateur
             $user = new \App\Entity\User();
 
             //je recupere les valeurs envoyée que je stocke dans des variables
-            $nom = $request->get('nom');
+            $nom = $request->get("nom");
             $prenom = $request->get('prenom');
             $age = $request->get('age');
             $sexe = $request->get('sexe');
@@ -266,7 +270,7 @@ class ApiController extends AbstractController
             $user->setPerimetre($perimetre);
             $user->setLatitude($latitude);
             $user->setLongitude($longitude);
-            $user->setTypeUserId($role);
+            //$user->setTypeUserId($role);
             $user->setIsDel($isDel);
 
             //je le persiste en db et j'envoi un code 200
@@ -274,7 +278,10 @@ class ApiController extends AbstractController
             $entityManager->persist($user);
             $entityManager->flush();
 
+
             $reponse->setStatusCode('200');
+
+
 
          //sinon j'envoi un status d'erreur
         }else{
@@ -1534,6 +1541,265 @@ return $reponse;
 
 //je renvoi mon tableau aux format json
         return $this->json($positionUsers);
+
+
+    }
+
+    /**
+     * @Route("/api/verifInscUser", name="verifInscUser")
+     */
+
+    //cette methode permet de vérifier si le pseudo et le mail d'un utilisateur existe en bdd, si il existe il renvoi un tableau
+    //le tableau contient de cle verifPseudo et verifMail qui ont toutes deux pour valeur un boolean
+    //true pour indiquer que l'imformation a été trouver, false pour le cas contraire
+
+    public function verifInscUser(Request $request){
+
+
+
+
+
+        $reponse = new Response();
+
+        $reponse->headers->set("Access-Control-Allow-Origin",'*');
+        $reponse->headers->set('Access-Control-Allow-Credentials',true);
+        $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+
+        $mailUser = $request->get('mail');
+        $pseudoUser = $request->get('pseudo');
+
+
+        //je verifie que mes donné envoyé ne sois pas vide
+        if($request->getContent() && $mailUser !== null && $pseudoUser !== null){
+//je recupere les donnée envoyé
+
+            //j'inisialise un tableau
+            $reponseVerifUser = array();
+
+            $users = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findAll();
+
+
+            //dans un un premier temp je boucle dans mes utilisateur pour rechercher si le pseudo a deja été utilisé
+            foreach ($users as $user) {
+
+                $pseudoBdd = $user->getPseudo();
+
+               //si mon pseudo a deja été utiliser
+                if ($pseudoBdd == $pseudoUser) {
+
+                    //je rajoute une clé a false
+                    $reponseVerifUser['validPseudo'] = false;
+
+                    //je sors de ma boucle
+                    break;
+
+
+             //si mon pseudo n'a jamais été utilisé ma clé vaut true
+                } else {
+
+                    $reponseVerifUser['validPseudo'] = true;
+
+                }
+            }
+
+            //deuxieme boucle pour savoir si le mail a deja été utiliser
+                foreach ($users as $user){
+
+
+
+                    $mailBdd = $user->getMail();
+
+//                si le mail existe en bdd
+                    if ($mailBdd == $mailUser){
+
+                        //je renvoi ma clé a false
+                        $reponseVerifUser['validMail'] = false;
+
+                        //je sors de ma boucle
+                        break;
+
+                        //sinon la valeur de ma clé vaut true
+
+                    }else{
+
+                        $reponseVerifUser['validMail'] = true;
+
+                    }
+
+
+
+            }
+
+            $reponse->headers->set('Content-Type', 'application/json');
+            $reponse->setContent(json_encode($reponseVerifUser));
+            $reponse->setStatusCode('200');
+
+         //si je ne récupère aucunne donné j'envoi un message d'erreur
+        }else{
+
+
+            $reponse->setStatusCode("404");
+            $reponse->headers->set('Content-Type', 'text/plain');
+
+            $reponse->setContent("les donné envoyé sont vide");
+
+        }
+
+        return $reponse;
+
+    }
+    /**
+     * @Route("/api/verifConUser", name="verifConUser")
+     */
+
+    //cette methode permet de tester si un utilisateur existe en bdd par rapport a son pseudo et mdp,
+    // si il existe il renvoi un tableau json contenant les info de l'utilisateur
+    public function verifConUser(Request $request){
+
+
+
+        $pseudo = $request->get('pseudo');
+
+        $mdp = $request-> get('mdp');
+
+        $reponse = new Response();
+
+        $reponse->headers->set("Access-Control-Allow-Origin",'*');
+        $reponse->headers->set('Access-Control-Allow-Credentials',true);
+        $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+
+
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findOneBy(["pseudo" => $pseudo, "mdp" => $mdp ]);
+
+
+        if($request->getContent() && $user != null){
+
+        $userTrouver = array(
+
+            "nom" => $user->getNom()
+
+        );
+
+            $reponse->headers->set('Content-Type', 'application/json');
+            $reponse->setContent($user->getJson());
+            $reponse->setStatusCode('200');
+
+
+
+        }else{
+
+            $reponse->setStatusCode("404");
+            $reponse->headers->set('Content-Type', 'text/plain');
+
+            $reponse->setContent("cette uttilisateur n'existe pas !");
+        }
+
+        return $reponse;
+
+    }
+
+    /**
+     * @Route("/api/checkInfoConnexion", name="checkInfoConnexion")
+     */
+
+    public function checkInfoConnexion(Request $request){
+
+
+
+        $reponse = new Response();
+
+        $reponse->headers->set("Access-Control-Allow-Origin",'*');
+        $reponse->headers->set('Access-Control-Allow-Credentials',true);
+        $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+
+        $mdpUser = $request->get('mdp');
+        $pseudoUser = $request->get('pseudo');
+
+
+        //je verifie que mes donné envoyé ne sois pas vide
+        if($request->getContent() && $mdpUser !== null && $pseudoUser !== null){
+//je recupere les donnée envoyé
+
+            //j'inisialise un tableau
+            $reponseVerifUser = array();
+
+            $users = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findAll();
+
+
+            //dans un un premier temp je boucle dans mes utilisateur pour rechercher si le pseudo a deja été utilisé
+            foreach ($users as $user) {
+
+                $pseudoBdd = $user->getPseudo();
+
+                //si mon pseudo a deja été utiliser
+                if ($pseudoBdd == $pseudoUser) {
+
+                    //je rajoute une clé a true
+                    $reponseVerifUser['validPseudo'] = true;
+
+                    //je sors de ma boucle
+                    break;
+
+
+                    //si mon pseudo n'a jamais été utilisé ma clé vaut false
+                } else {
+
+                    $reponseVerifUser['validPseudo'] = false;
+
+                }
+            }
+
+            //deuxieme boucle pour savoir si le pseudo et mot de passe correspondent
+            foreach ($users as $user){
+
+
+                $pseudoBdd = $user->getPseudo();
+                $mdpBdd = $user->getMdp();
+
+//                si le mail existe en bdd
+                if ($mdpBdd == $mdpUser && $pseudoUser == $pseudoBdd ){
+
+                    //je renvoi ma clé a false
+                    $reponseVerifUser['validMdp'] = true;
+
+                    //je sors de ma boucle
+                    break;
+
+                    //sinon la valeur de ma clé vaut true
+
+                }else{
+
+                    $reponseVerifUser['validMdp'] = false;
+
+                }
+
+
+
+            }
+
+            $reponse->headers->set('Content-Type', 'application/json');
+            $reponse->setContent(json_encode($reponseVerifUser));
+            $reponse->setStatusCode('200');
+
+            //si je ne récupère aucunne donné j'envoi un message d'erreur
+        }else{
+
+
+            $reponse->setStatusCode("404");
+            $reponse->headers->set('Content-Type', 'text/plain');
+
+            $reponse->setContent("les donné envoyé sont vide");
+
+        }
+
+        return $reponse;
+
+
+
+
 
 
     }
