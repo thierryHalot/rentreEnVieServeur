@@ -1,3 +1,4 @@
+
 var Encore = require('@symfony/webpack-encore');
 
 Encore
@@ -48,8 +49,8 @@ Encore
         $: 'jquery',
         jQuery: 'jquery',
         'window.jQuery': 'jquery'
-    })
+    });
 
-;
+
 
 module.exports = Encore.getWebpackConfig();
