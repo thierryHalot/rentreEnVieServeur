@@ -71,4 +71,31 @@ class BlackList
 
         return $this;
     }
+
+    public function getTabAssoBlacklist(){
+
+        $tableau = array(
+            "id" => $this->id,
+            "date"=> $this->date->format('Y-m-d H:i')
+        );
+ if($this->getBloquandId() !== null){
+
+     $tableau["userBloquand"] = $this->getBloquandId()->getTabAsso();
+
+ }else{
+
+     $tableau["userBloquand"] = null;
+ }
+
+ if($this->getBloquandId() !== null){
+
+     $tableau["userBloquer"] = $this->getBloquerId()->getTabAsso();
+
+ }else{
+
+     $tableau["userBloquer"] = null;
+ }
+        return $tableau;
+
+    }
 }

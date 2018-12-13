@@ -105,4 +105,23 @@ class News
 
         return $this;
     }
+
+    public function getTabAsso(){
+
+        $tableau = array(
+
+            "id" => $this->id,
+            "titre"=> $this->titre,
+            "description"=> $this->description,
+
+        );
+        if($this->date !== null){
+            $tableau['date'] = $this->date->format('Y-m-d H:i');
+        }
+
+        return $tableau;
+
+
+
+    }
 }

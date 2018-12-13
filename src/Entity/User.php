@@ -111,6 +111,11 @@ class User
      */
     private $is_del;
 
+    /**
+     * @ORM\Column(type="string", length=30, nullable=true)
+     */
+    private $trancheAge;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -366,9 +371,9 @@ class User
 
           "pseudo"=>$this->pseudo,
 
-          "mdp"=>$this->mdp,
-
           "fumeur"=>$this->fumeur,
+
+          "img"=> $this->img,
 
           "clubFavoris"=>$this->club_favoris,
 
@@ -398,5 +403,73 @@ class User
 
         return json_encode($user);
 
+    }
+
+    public function getTabAsso(){
+
+
+        $user = array(
+
+            "id" => $this->id,
+
+            "nom"=> $this->nom,
+
+            "prenom"=> $this->prenom,
+
+            "age"=>$this->age,
+
+            "sexe"=>$this->sexe,
+
+            "tel"=>$this->tel,
+
+            "adresse"=>$this->adresse,
+
+            "mail"=>$this->mail,
+
+            "pseudo"=>$this->pseudo,
+
+            "fumeur"=>$this->fumeur,
+
+            "img"=> $this->img,
+
+            "clubFavoris"=>$this->club_favoris,
+
+            "musiqueFavoris"=>$this->musique_favoris,
+
+            "modeSortie"=>$this->mode_sortie,
+
+            "perimetre"=>$this->perimetre,
+
+            "latitude" => $this->latitude,
+
+            "longitude"=> $this->longitude,
+
+            "isDel" => $this->is_del
+
+        );
+
+        if($this->getTypeUserId() !== null){
+
+            $user["type"] = $this->getTypeUserId()->getRole();
+
+        }else{
+
+            $user["type"] = null ;
+
+        }
+
+        return $user;
+
+    }
+    public function getTrancheAge(): ?string
+    {
+        return $this->trancheAge;
+    }
+
+    public function setTrancheAge(?string $trancheAge): self
+    {
+        $this->trancheAge = $trancheAge;
+
+        return $this;
     }
 }

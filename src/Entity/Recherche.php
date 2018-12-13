@@ -56,6 +56,16 @@ class Recherche
      */
     private $statut;
 
+    /**
+     * @ORM\Column(type="integer", nullable=true)
+     */
+    private $perimetre;
+
+    /**
+     * @ORM\Column(type="string", length=30, nullable=true)
+     */
+    private $trancheAge;
+
 
     public function getId(): ?int
     {
@@ -154,6 +164,30 @@ class Recherche
     public function setStatut(?string $statut): self
     {
         $this->statut = $statut;
+
+        return $this;
+    }
+
+    public function getPerimetre(): ?int
+    {
+        return $this->perimetre;
+    }
+
+    public function setPerimetre(?int $perimetre): self
+    {
+        $this->perimetre = $perimetre;
+
+        return $this;
+    }
+
+    public function getTrancheAge(): ?string
+    {
+        return $this->trancheAge;
+    }
+
+    public function setTrancheAge(?string $trancheAge): self
+    {
+        $this->trancheAge = $trancheAge;
 
         return $this;
     }

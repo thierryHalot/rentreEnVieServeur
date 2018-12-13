@@ -88,4 +88,26 @@ class HeaderMsg
 
         return $this;
     }
+
+    public function getTabAsso(){
+
+        $tableau = array(
+
+            "id"=>$this->id,
+            "isDel"=>$this->is_del,
+            "emetteurId"=>$this->emetteur_id->getTabAsso(),
+            "recepteurId"=>$this->recepteur_id->getTabAsso(),
+        );
+
+        if($this->date !== null){
+
+            $tableau['date'] = $this->date->format('Y-m-d H:i');
+
+        }
+
+        return $tableau;
+
+
+
+    }
 }

@@ -88,4 +88,27 @@ class Msg
 
         return $this;
     }
+
+    public function getTabAssoMsg(){
+
+        $msg = array(
+
+            "id" => $this->id,
+            "objet" => $this->objet,
+            "contenu"=>$this->contenu,
+            "date"=> $this->date->format('Y-m-d H:i')
+        );
+        if($this->getMsgId() !== null){
+
+            $msg["idEmetteur"] = $this->getMsgId()->getEmetteurId()->getId();
+            $msg["idRecepteur"] = $this->getMsgId()->getRecepteurId()->getId();
+
+        }else{
+
+            $msg["idEmetteur"] = null ;
+            $msg["idRecepteur"] = null;
+        }
+        return $msg;
+
+    }
 }
