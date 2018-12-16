@@ -571,6 +571,162 @@ class ApiController extends AbstractController
         return $reponse;
 
     }
+    /**
+     * @Route("/api/getNewMdp", name="getNewMdp")
+     */
+
+    public function getNewMdp(Request $request, \Swift_Mailer $mailer){
+
+        $reponse = new Response();
+        $reponse->headers->set("Access-Control-Allow-Origin",'*');
+        $reponse->headers->set('Access-Control-Allow-Credentials',true);
+        $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+
+
+     //je recupere le mail envoyé par l'utilisateur
+     $mail = $request->get('mail');
+
+     //je tente de récupéré l'utilisateur correspondant a ce mail
+
+
+     $moi = 'halotthierry34@gmail.com';
+
+     $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findOneBy(["mail" => $mail]);
+
+//si mon utilisateur n'est pas vide, c'est qu'il existe en bdd
+     if(!empty($user)) {
+
+         //je definie une chaine de caractere contenant toutes les lettres de l'alphabet et tous les chiffres
+         $string ='abcdefghijklmnopqrstuvwxyz123456789';
+
+         //je les mélanges
+         $newMdp = str_shuffle($string);
+
+         //je garde que les 6 premiers caractere qui correspondra a mon nouveau de passe
+         $newMdp = substr($newMdp,0,6);
+
+         $user->setMdp($newMdp);
+
+         $entityManager = $this->getDoctrine()->getManager();
+         $entityManager->persist($user);
+         $entityManager->flush();
+
+         //je definie mon mail contenant le mot de passe généré
+         $message = (new \Swift_Message('RentreEnVie : Nouveau mot de passe'))
+             ->setFrom($moi)
+             ->setTo($mail)
+             ->setBody(
+                 'Bonjour '.$user->getPseudo().',<br>Voici votre nouveau mot de passe : '.$newMdp. '<br>pensez à le changer une fois connecter sur le site',
+                 'text/html'
+             );
+
+
+         $mailer->send($message);
+
+         //si le mail a été retrouver alors je definie mon statue a true
+         $status = array('verifMail' => true);
+
+
+
+
+     }else{
+
+         //si l'utilisateur n'a pas été trouver, le mail est incorecte, je definie mon statue a false
+
+         $status = array('verifMail' => false);
+
+
+     }
+
+        //je retourne le statue de mon mail au format json
+        $reponse->headers->set('Content-Type', 'application/json');
+        $reponse->setContent(json_encode($status));
+        $reponse->setStatusCode('200');
+        return $reponse;
+    }
+
+    /**
+     * @Route("/api/sendMsgContact", name="sendMsgContact")
+     */
+
+    //cette methode permet de regevoir le mail correspondant au formulaire de contact
+    public function sendMsgContact(Request $request, \Swift_Mailer $mailer){
+
+
+        $reponse = new Response();
+        $reponse->headers->set("Access-Control-Allow-Origin",'*');
+        $reponse->headers->set('Access-Control-Allow-Credentials',true);
+        $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+
+
+        //je recupere le mail envoyé par l'utilisateur
+        $mail = $request->get('mail');
+
+        $msgUser = $request->get('message');
+
+        $nom = $request->get('nom');
+
+
+
+
+        $moi = 'halotthierry34@gmail.com';
+
+        //je tente de récupéré l'utilisateur correspondant a ce mail
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findOneBy(["mail" => $mail]);
+
+
+
+//si mon utilisateur n'est pas vide, c'est qu'il existe en bdd,
+//si le nom qui la renseigné ne correspond pas avec les données récupérées, c'est que le nom est incorecte
+        if(!empty($user) && $nom == $user->getNom()) {
+
+            //si je reçoi bien un msg j'envoi mon mail
+            if ($msgUser !== null) {
+
+                //je definie mon mail contenant le mot de passe généré
+                $message = (new \Swift_Message('Contact RentreEnVie : ' . $user->getMail()))
+                    ->setFrom($moi)
+                    ->setTo($moi)
+                    ->setBody(
+
+                        "Nom : ".$user->getNom()."<br>".
+                        "Prenom : ".$user->getPrenom()."<br>".
+                        "Pseudo : ".$user->getPseudo()."<br>".
+                        "Tel : 0".$user->getTel()."<br>".
+                        "Adresse : ".$user->getAdresse()."<br>".
+                        "Mail : ".$user->getMail()."<br>".
+                        "<br>Contenue du message : <br>".$msgUser,
+                        'text/html'
+                    );
+
+
+                $mailer->send($message);
+
+            }
+
+            //si le mail a été retrouver alors je definie mon statue a true
+            $status = array('verifMail' => true);
+
+
+
+
+        }else{
+
+            //si l'utilisateur n'a pas été trouver, le mail est incorecte, je definie mon statue a false
+
+            $status = array('verifMail' => false);
+
+
+        }
+
+        //je retourne le statue de mon mail au format json
+        $reponse->headers->set('Content-Type', 'application/json');
+        $reponse->setContent(json_encode($status));
+        $reponse->setStatusCode('200');
+        return $reponse;
+    }
 
 
     /**
