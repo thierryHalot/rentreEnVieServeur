@@ -10,22 +10,22 @@
 <div class="offset-sm-4 col-sm-4">
 
     <img class="img-fluid" src="https://via.placeholder.com/400s">
-     {%  if messageErreur is defined %}
+     {%  if messageErreur%}
     <p style="color: red">
-        {{ messageErreur }}
+        {{ messageErreur.messageKey }}
     </p>
         {% endif %}
 
-    <form action="/VerifConnexion" method="post" style="margin-top: 10px ;">
+    <form action="{{ path('connexion') }}" method="post" style="margin-top: 10px ;">
 
         <div class="form-group">
             <label for="pseudo">Pseudo:</label>
-            <input type="text" class="form-control" id="exampleInputEmail1" name="pseudo" aria-describedby="emailHelp" placeholder="pseudo">
+            <input type="text" class="form-control" id="exampleInputEmail1" name="_username" aria-describedby="emailHelp" placeholder="pseudo" required>
 
         </div>
         <div class="form-group">
             <label for="psw">Mot de passe:</label>
-            <input type="password" class="form-control" id="psw" name="psw" placeholder="mot de passe">
+            <input type="password" class="form-control" id="psw" name="_password" placeholder="mot de passe" required>
         </div>
         <button type="submit" class="btn btn-primary float-sm-right">Connexion</button>
 
