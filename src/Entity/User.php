@@ -3,11 +3,12 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
  */
-class User
+class User implements UserInterface
 {
     /**
      * @ORM\Id()
@@ -471,5 +472,57 @@ class User
         $this->trancheAge = $trancheAge;
 
         return $this;
+    }
+
+    public function getRoles()
+    {
+
+
+        if($this->getTypeUserId() !== null){
+
+           $role = $this->getTypeUserId()->getRole();
+
+        }else{
+
+            $role = '';
+        }
+
+        switch ($role){
+
+            case 'consomateur':
+                $status = ['ROLE_USER'];
+            break;
+            case 'sam':
+                $status = ['ROLE_USER'];
+            break;
+            case 'admin':
+                $status = ['ROLE_ADMIN'];
+            break;
+            default:
+                $status = ['ROLE_USER'];
+
+
+        }
+        return $status;
+    }
+
+    public function getPassword()
+    {
+        return $this->getMdp();
+    }
+
+    public function getSalt()
+    {
+        // TODO: Implement getSalt() method.
+    }
+
+    public function getUsername()
+    {
+        return $this->getPseudo();
+    }
+
+    public function eraseCredentials()
+    {
+        // TODO: Implement eraseCredentials() method.
     }
 }

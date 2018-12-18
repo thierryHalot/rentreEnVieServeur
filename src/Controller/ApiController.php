@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Constraints\DateTime;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 class ApiController extends AbstractController
 {
@@ -309,7 +310,7 @@ class ApiController extends AbstractController
      * @Route("api/post/user", name="apiPostUser")
      */
 //fonction qui permet d'inserer un nouvelle utilisateur
-    public function apiPostUser(Request $request)
+    public function apiPostUser(Request $request, UserPasswordEncoderInterface $encoder)
     {
         //dans les entete de la requete je permet l'accses a tous les supports
         //header("Allow-Control-Allow-Origin: *");
@@ -387,12 +388,17 @@ class ApiController extends AbstractController
             $user->setTrancheAge($trancheAge);
             $user->setIsDel($isDel);
 
+            //avant de persister je hache le mdp
+            $hash = $encoder->encodePassword($user,$user->getMdp());
+
+            $user->setMdp($hash);
             //je le persiste en db et j'envoi un code 200
             $entityManager = $this->getDoctrine()->getManager();
             $entityManager->persist($user);
             $entityManager->flush();
 
-
+//            $reponse->headers->set('Content-Type', 'text/plain');
+//            $reponse->setContent('mdp crypter');
             $reponse->setStatusCode('200');
 
 
@@ -2384,7 +2390,7 @@ class ApiController extends AbstractController
      * @Route("/api/verifConUser", name="verifConUser")
      */
 
-    //cette methode permet de tester si un utilisateur existe en bdd par rapport a son pseudo et mdp,
+    //cette methode permet de tester si un utilisateur existe en bdd par rapport a son pseudo,
     // si il existe il renvoi un tableau json contenant les info de l'utilisateur
     public function verifConUser(Request $request)
     {
@@ -2402,7 +2408,8 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
 
 
-        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findOneBy(["pseudo" => $pseudo, "mdp" => $mdp]);
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findOneBy(["pseudo" => $pseudo]);
+
 
 
         if ($request->getContent() && $user != null) {
@@ -2487,18 +2494,20 @@ class ApiController extends AbstractController
 
 
                 $pseudoBdd = $user->getPseudo();
-                $mdpBdd = $user->getMdp();
+                //je tente de décrypter le mot de passe ,
+                // password_verify return true si le mot de passe en clair correspond avec mon mot de passe crypter
+                $mdpBdd = password_verify($mdpUser,$user->getMdp());
 
-//                si le mail existe en bdd
-                if ($mdpBdd == $mdpUser && $pseudoUser == $pseudoBdd) {
+//                si mon mot de passe et mon nom d'utilisateur correspondent je renvoi true
+                if ($mdpBdd && $pseudoUser == $pseudoBdd) {
 
-                    //je renvoi ma clé a false
+                    //je renvoi ma clé a tru
                     $reponseVerifUser['validMdp'] = true;
 
                     //je sors de ma boucle
                     break;
 
-                    //sinon la valeur de ma clé vaut true
+                    //sinon la valeur de ma clé vaut false
 
                 } else {
 
@@ -2618,7 +2627,7 @@ class ApiController extends AbstractController
             $preference = $this->getDoctrine()->getRepository(Recherche::class)->findOneBy(["recherchant_id" => $idUser]);
 
             //si l'utilisateur a des préférences enregistrer
-            if ($preference != null) {
+            if (!empty($preference)) {
 
 
                 $entityManager = $this->getDoctrine()->getManager();
@@ -2705,8 +2714,19 @@ class ApiController extends AbstractController
 
                     //je recherche tous les uttilisateurs qui sont en ligne
 
-                    $resultaRecherche = $this->getDoctrine()->getRepository(User::class)->findBy(["mode_sorite" => 1]);
+                    $resultatRecherche = $this->getDoctrine()->getRepository(User::class)->findBy(["mode_sortie" => 1]);
 
+
+                    $tableauJsonRecherche = array();
+
+
+                     foreach ($resultatRecherche as $userRecherche) {
+
+                        array_push($tableauJsonRecherche, $userRecherche->getTabAsso());
+
+                    }
+
+                $resultaRecherche = $tableauJsonRecherche;
 
                 }
 

@@ -7,17 +7,21 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class ConnexionController extends AbstractController
 {
     /**
      * @Route("/login", name="connexion")
      */
-    public function index()
+    public function index(AuthenticationUtils $authenticationUtils)
     {
-        $messageErreur ="";
+        $messageErreur = $authenticationUtils->getLastAuthenticationError();
+
+
         return $this->render('connexion/index.html.twig', [
             'controller_name' => 'ConnexionController',
+            'messageErreur' => $messageErreur
         ]);
     }
 
@@ -34,8 +38,8 @@ class ConnexionController extends AbstractController
 $messageErreur = '';
 
 //je recupère les valeur de mon formulaire
-$pseudo = $request->get("pseudo");
-$mdp = $request->get("psw");
+$pseudo = $request->get("_username");
+$mdp = $request->get("_password");
 
 //je tente de recupérer l'uttilisateur en base de donné
 $user = $this->getDoctrine()->getRepository(User::class)->findOneBy(['pseudo' => $pseudo, 'mdp' => $mdp ]);
@@ -76,4 +80,10 @@ if (!empty($user)){
 
     }
 
+
+    /**
+     * @Route("/logout", name="deconexion")
+     */
+
+    public function deconnexion(){}
 }
