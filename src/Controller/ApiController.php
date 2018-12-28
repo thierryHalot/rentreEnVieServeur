@@ -11,8 +11,11 @@ use App\Entity\TypeUser;
 use App\Entity\Vote;
 use App\Entity\User;
 use App\Repository\MsgRepository;
+use App\Security\TokenAuthenticator;
+use Doctrine\ORM\EntityManager;
 use function MongoDB\BSON\toJSON;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -31,28 +34,59 @@ class ApiController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/api/getusers", name="getallusers")
-     */
+//    /**
+//     * @Route("/apiToken", name="apiToken")
+//     */
+//
+//    public function testToken(Request $request)
+//    {
+//
+//
+//
+//        $em = $this->getDoctrine()->getManager();
+//        $secu = new TokenAuthenticator($em);
+//
+//        $credential = $secu->getCredentials($request);
+//        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find(30);
+//        $valid = $secu->checkCredentials($credential,$user);
+//
+//        if ($valid){
+//
+//            $status = 'oui';
+//
+//        }else{
+//
+//            $status = 'non';
+//        }
+//
+//        //$token = $secu->createAuthenticatedToken($user,'toto');
+//
+//
+//        return new JsonResponse( array('test'=> $status));
+//    }
 
-    //Retourne la listes de tous les uttilisateur au format json
-    public function getAllUsers()
-    {
-        //dans les entete de la requete je permet l'accses a tous les supports
-        header("Access-Control-Allow-Origin: *");
-        //je recupère la listes de tous les utilisateur
-        $users = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findAll();
-
-
-        //je les renvoi au format json
-        return $this->json($users);
-    }
+//    /**
+//     * @Route("/api/getusers", name="getallusers")
+//     */
+//
+//    //Retourne la listes de tous les uttilisateur au format json
+//    public function getAllUsers()
+//    {
+//        //dans les entete de la requete je permet l'accses a tous les supports
+//        header("Access-Control-Allow-Origin: *");
+//        //je recupère la listes de tous les utilisateur
+//        $users = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findAll();
+//
+//
+//        //je les renvoi au format json
+//        return $this->json($users);
+//    }
 
     /**
      * @Route("api/get/user/{id}", name="apiGetUser")
      */
 //fonction qui permet de récupéré un utilisateur par rapport a son id et de le renvoyé au format json
-    public function apiGetUser($id)
+    public function apiGetUser($id, Request $request)
     {
         //dans les entete de la requete je permet l'accses a tous les supports
 
@@ -60,11 +94,26 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($id);
 
+        $em = $this->getDoctrine()->getManager();
+        $secu = new TokenAuthenticator($em);
+
+        //je recupere le token de l'utilisateur en question
+
+        $credential = $secu->getCredentialsforParam($request);
+
+        $userToken = $this->getDoctrine()->getRepository(User::class)->findOneBy(['apiToken' => $credential['token']]);
+        //je verifie si le token est valide
+        $validToken = $secu->checkCredentials($credential,$userToken);
+
+        //si son token est valide
+        if($validToken) {
         if(!empty($user)){
+
+
 
             $reponse->headers->set('Content-Type', 'application/json');
             $reponse->setContent($user->getJson());
@@ -77,6 +126,14 @@ class ApiController extends AbstractController
             $reponse->setContent("Erreur : l'utilisateur n'existe pas");
 
 
+
+        }
+        }else{
+
+
+            $reponse->setStatusCode("403");
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setContent("Vous n'avez pas les permissions");
 
         }
 
@@ -97,7 +154,7 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         //je récupère l'uttilisateur suivant son id
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($id);
@@ -105,6 +162,18 @@ class ApiController extends AbstractController
 
         if (!empty($user)) {
 
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
             $img = $request->files->get('img');
 
             $status = array('upload' => false);
@@ -135,7 +204,14 @@ class ApiController extends AbstractController
             $reponse->setContent(json_encode($status));
             $reponse->setStatusCode('200');
 
+            }else{
 
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
         }else {
 
                 $reponse->setStatusCode('404');
@@ -149,7 +225,7 @@ class ApiController extends AbstractController
      * @Route("api/put/user/{id}", name="apiPutUser")
      */
 //fonction qui permet de mettre à jour un utilisateur selon son id
-    public function apiPutUser($id, Request $request)
+    public function apiPutUser($id, Request $request,UserPasswordEncoderInterface $encoder)
     {
         //dans les entete de la requete je permet l'accses a tous les supports
         //header("Access-Control-Allow-Origin: *");
@@ -159,13 +235,29 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         //je récupère l'uttilisateur suivant son id
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($id);
 
         //je vérifie dans un premier temp que je récupère bien des données et que l'utilisateur existe en bdd
         if (!empty($user)) {
+
+
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
+
+
             //je recupere les valeurs envoyée que je stocke dans des variables
             $nom = $request->get('nom');
             $prenom = $request->get('prenom');
@@ -249,6 +341,9 @@ class ApiController extends AbstractController
             if ($mdp != null && !empty($mdp)) {
 
                 $user->setMdp($mdp);
+                //avant de persister je hache le mdp
+                $hash = $encoder->encodePassword($user,$user->getMdp());
+                $user->setMdp($hash);
             }
 
             if ($fumeur != null) {
@@ -294,6 +389,15 @@ class ApiController extends AbstractController
 
             $reponse->setStatusCode('200');
 
+
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
             //sinon j'envoi une erreur
         } else {
 
@@ -418,7 +522,7 @@ class ApiController extends AbstractController
      */
 
     //Retourne toute les news au format json
-    public function getAllNews()
+    public function getAllNews(Request $request)
     {
         //dans les entete de la requete je permet l'accses a tous les supports
 
@@ -428,6 +532,19 @@ class ApiController extends AbstractController
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
         $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
 
+        $em = $this->getDoctrine()->getManager();
+        $secu = new TokenAuthenticator($em);
+
+        //je recupere le token de l'utilisateur en question
+
+        $credential = $secu->getCredentialsforParam($request);
+
+        $user = $this->getDoctrine()->getRepository(User::class)->findOneBy(['apiToken' => $credential['token']]);
+        //je verifie si le token est valide
+        $validToken = $secu->checkCredentials($credential,$user);
+
+        //si son token est valide
+        if($validToken) {
         //je recupère la listes de toutes les news
         $news = $this->getDoctrine()->getRepository(News::class)->findAll();
 
@@ -441,6 +558,14 @@ class ApiController extends AbstractController
         $reponse->headers->set('Content-Type', 'application/json');
         $reponse->setContent(json_encode($tableauNews));
         $reponse->setStatusCode('200');
+        }else{
+
+
+            $reponse->setStatusCode("403");
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setContent("Vous n'avez pas les permissions");
+
+        }
         //je les renvoi au format json
         return $reponse;
     }
@@ -451,19 +576,31 @@ class ApiController extends AbstractController
      */
 
     //Retourne tous les utilisateur blacklister d'un utilisateur
-    public function getBlacklistUser($id)
+    public function getBlacklistUser($id,Request $request)
     {
         //dans les entete de la requete je permet l'accses a tous les supports
         $reponse = new Response();
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
 
         //je recupère les utilisateur blacklister correspondant a un utilisateur
         $blacklist = $this->getDoctrine()->getRepository(BlackList::class)->findBy(["bloquand_id" => $id]);
+        $em = $this->getDoctrine()->getManager();
+        $secu = new TokenAuthenticator($em);
 
+        //je recupere le token de l'utilisateur en question
+
+        $credential = $secu->getCredentialsforParam($request);
+
+        $user = $this->getDoctrine()->getRepository(User::class)->findOneBy(['apiToken' => $credential['token']]);
+        //je verifie si le token est valide
+        $validToken = $secu->checkCredentials($credential,$user);
+
+        //si son token est valide
+        if($validToken) {
 
         $tabBlacklist = array();
 
@@ -476,6 +613,15 @@ class ApiController extends AbstractController
         $reponse->headers->set('Content-Type', 'application/json');
         $reponse->setContent(json_encode($tabBlacklist));
         $reponse->setStatusCode('200');
+
+        }else{
+
+
+            $reponse->setStatusCode("403");
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setContent("Vous n'avez pas les permissions");
+
+        }
         //je les renvoi au format json
         return $reponse;
     }
@@ -485,7 +631,7 @@ class ApiController extends AbstractController
      */
 
     //cette methode renvoi true si l'utilisateur a été blacklister ou false dans le cas contraire
-    function getIfUserIsInBlacklist($idUserBloquand, $idUserBloquer){
+    function getIfUserIsInBlacklist($idUserBloquand, $idUserBloquer, Request $request){
 
         //je tente de récupéré l'utilisateur blacklister par rapport a son id
         $blacklist = $this->getDoctrine()->getRepository(BlackList::class)->findOneBy(["bloquand_id" => $idUserBloquand, "bloquer_id" => $idUserBloquer]);
@@ -494,12 +640,25 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         //j'initialise un boolean
         $drapeau = false;
         $tableau = array();
 
+        $em = $this->getDoctrine()->getManager();
+        $secu = new TokenAuthenticator($em);
+
+        //je recupere le token de l'utilisateur en question
+
+        $credential = $secu->getCredentialsforParam($request);
+
+        $user = $this->getDoctrine()->getRepository(User::class)->findOneBy(['apiToken' => $credential['token']]);
+        //je verifie si le token est valide
+        $validToken = $secu->checkCredentials($credential,$user);
+
+        //si son token est valide
+        if($validToken) {
         //si ma blacklist n'est pas vide c'est que l'utilisateur est present dans la blacklist
         if(!empty($blacklist)){
 
@@ -513,7 +672,14 @@ class ApiController extends AbstractController
         $reponse->headers->set('Content-Type', 'application/json');
         $reponse->setContent(json_encode($tableau));
         $reponse->setStatusCode('200');
+        }else{
 
+
+            $reponse->setStatusCode("403");
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setContent("Vous n'avez pas les permissions");
+
+        }
         return $reponse;
     }
 
@@ -581,7 +747,7 @@ class ApiController extends AbstractController
      * @Route("/api/getNewMdp", name="getNewMdp")
      */
 
-    public function getNewMdp(Request $request, \Swift_Mailer $mailer){
+    public function getNewMdp(Request $request, \Swift_Mailer $mailer,UserPasswordEncoderInterface $encoder){
 
         $reponse = new Response();
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
@@ -612,7 +778,9 @@ class ApiController extends AbstractController
          //je garde que les 6 premiers caractere qui correspondra a mon nouveau de passe
          $newMdp = substr($newMdp,0,6);
 
-         $user->setMdp($newMdp);
+         //avant de persister je hache le mdp
+         $hash = $encoder->encodePassword($user,$newMdp);
+         $user->setMdp($hash);
 
          $entityManager = $this->getDoctrine()->getManager();
          $entityManager->persist($user);
@@ -683,7 +851,18 @@ class ApiController extends AbstractController
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findOneBy(["mail" => $mail]);
 
 
+        $em = $this->getDoctrine()->getManager();
+        $secu = new TokenAuthenticator($em);
 
+        //je recupere le token de l'utilisateur en question
+
+        $credential = $secu->getCredentialsforParam($request);
+        $userToken = $this->getDoctrine()->getRepository(User::class)->findOneBy(['apiToken' => $credential['token']]);
+        //je verifie si le token est valide
+        $validToken = $secu->checkCredentials($credential,$userToken);
+
+        //si son token est valide
+        if($validToken) {
 //si mon utilisateur n'est pas vide, c'est qu'il existe en bdd,
 //si le nom qui la renseigné ne correspond pas avec les données récupérées, c'est que le nom est incorecte
         if(!empty($user) && $nom == $user->getNom()) {
@@ -731,6 +910,15 @@ class ApiController extends AbstractController
         $reponse->headers->set('Content-Type', 'application/json');
         $reponse->setContent(json_encode($status));
         $reponse->setStatusCode('200');
+
+        }else{
+
+
+            $reponse->setStatusCode("403");
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setContent("Vous n'avez pas les permissions");
+
+        }
         return $reponse;
     }
 
@@ -766,6 +954,21 @@ class ApiController extends AbstractController
             //j'envoi donc un status 200
             if (!empty($userBloquand) && !empty($userBloquer)) {
 
+                $em = $this->getDoctrine()->getManager();
+                $secu = new TokenAuthenticator($em);
+
+                //je recupere le token de l'utilisateur en question
+
+                $credential = $secu->getCredentialsforParam($request);
+
+                //je verifie si le token est valide
+                $validToken = $secu->checkCredentials($credential,$userBloquand);
+
+                //si son token est valide
+                if($validToken) {
+
+
+
                 $blacklist->setBloquerId($userBloquer);
                 $blacklist->setBloquandId($userBloquand);
                 $blacklist->setDate(new \DateTime());
@@ -792,7 +995,14 @@ class ApiController extends AbstractController
                     $reponse->setContent("l'utilisateur a deja été blacklister");
                 }
 
+                }else{
 
+
+                    $reponse->setStatusCode("403");
+                    $reponse->headers->set('Content-Type', 'text/plain');
+                    $reponse->setContent("Vous n'avez pas les permissions");
+
+                }
                 //sinon j'envoi une erreur une erreur
             } else {
 
@@ -818,7 +1028,7 @@ class ApiController extends AbstractController
      */
 
     //Retourne tous les utilisateur blacklister d'un utilisateur
-    public function deleteBlacklist($idblacklist)
+    public function deleteBlacklist($idblacklist, Request $request)
     {
         //dans les entete de la requete je permet l'accses a tous les supports
         //header("Access-Control-Allow-Origin: *");
@@ -829,14 +1039,25 @@ class ApiController extends AbstractController
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
 
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
+        $em = $this->getDoctrine()->getManager();
+        $secu = new TokenAuthenticator($em);
+
+        //je recupere le token de l'utilisateur en question
+
+        $credential = $secu->getCredentialsforParam($request);
+
+        $user = $this->getDoctrine()->getRepository(User::class)->findOneBy(['apiToken' => $credential['token']]);
+        //je verifie si le token est valide
+        $validToken = $secu->checkCredentials($credential,$user);
+
+        //si son token est valide
+        if($validToken) {
         $blacklist = $this->getDoctrine()->getRepository(BlackList::class)->find($idblacklist);
 
         //si ma blacklist existe alors je la supprime et je renvoi un statut 200
 
-
-            //j'insere les données
             $entityManager = $this->getDoctrine()->getManager();
             $entityManager->remove($blacklist);
             $entityManager->flush();
@@ -844,7 +1065,14 @@ class ApiController extends AbstractController
            
             $reponse->setStatusCode('200');
 
+        }else{
 
+
+            $reponse->setStatusCode("403");
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setContent("Vous n'avez pas les permissions");
+
+        }
         return $reponse;
 
     }
@@ -857,7 +1085,7 @@ class ApiController extends AbstractController
      */
 
     //Retourne la conversation entre deux membres ou juste les message de l'emmetteur dans le cas ou il n'a pas eu de réponse
-    public function getConversationUser($idEmetteur, $idRecepteur)
+    public function getConversationUser($idEmetteur, $idRecepteur, Request $request)
     {
         //dans les entete de la requete je permet l'accses a tous les supports
        // header("Access-Control-Allow-Origin: *");
@@ -873,8 +1101,24 @@ class ApiController extends AbstractController
 
         $headerRecepteur = $this->getDoctrine()->getRepository(HeaderMsg::class)->findOneBy(["emetteur_id" => $idRecepteur, "recepteur_id" => $idEmetteur]);
         $tableau = array();
+
+        $em = $this->getDoctrine()->getManager();
+        $secu = new TokenAuthenticator($em);
+
+        //je recupere le token de l'utilisateur en question
+
+        $credential = $secu->getCredentialsforParam($request);
+
+        $user = $this->getDoctrine()->getRepository(User::class)->findOneBy(['apiToken' => $credential['token']]);
+        //je verifie si le token est valide
+        $validToken = $secu->checkCredentials($credential,$user);
+
+        //si son token est valide
+        if($validToken) {
 //si l'emeteur a envoyer un message mais qu'il n'a pas eu de reponce
         if (empty($headerRecepteur) && !empty($headerEmetteur)) {
+
+
 
             //dans ce cas la conversation est a sens unique, je recupere juste les message de l'emetteur
             $conversation = $this->getDoctrine()->getRepository(Msg::class)->findBy(['msg_id' => $headerEmetteur->getId()]);
@@ -915,7 +1159,14 @@ class ApiController extends AbstractController
             $reponse->setContent("Erreur : la conversation n'existe pas");
             $reponse->headers->set('Content-Type', 'text/plain');
         }
+        }else{
 
+
+            $reponse->setStatusCode("403");
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setContent("Vous n'avez pas les permissions");
+
+        }
 
         //je retourne la conversation au format json
         //return $this->json($conversation);
@@ -952,6 +1203,20 @@ class ApiController extends AbstractController
 
         //je verifie si ils existent bien en bdd
         if (!empty($userEmetteur) && !empty($userRecepteur)) {
+
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$userEmetteur);
+
+            //si son token est valide
+            if($validToken) {
+
 
             //je tente de récupéré une éventuel conversation en cour entre l'emetteur et le recepteur
 
@@ -1031,6 +1296,14 @@ class ApiController extends AbstractController
                 $reponse->setStatusCode('200');
             }
 
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
         } else {
 
             $reponse->setStatusCode('404');
@@ -1049,7 +1322,7 @@ class ApiController extends AbstractController
      */
 
     //cette fonction retourne toutes les entete de message correspondant a un utilisateur dont la valeur de is_del est egal a 0
-    public function getAllHeaderMsgUser($idUser)
+    public function getAllHeaderMsgUser($idUser, Request $request)
     {
 
         //dans les entete de la requete je permet l'accses a tous les supports
@@ -1064,7 +1337,18 @@ class ApiController extends AbstractController
 
         //si mon utilisateur existe
         if (!empty($user)) {
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
 
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
             //je récupere toute les entete des conversation de cette utilisateur
             $headerMsgs = $this->getDoctrine()->getRepository(HeaderMsg::class)->findBy(["emetteur_id" => $idUser,"is_del"=> 0]);
 
@@ -1084,6 +1368,14 @@ class ApiController extends AbstractController
             $reponse->setContent(json_encode($tabHeaderMsg));
             $reponse->setStatusCode('200');
 
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
 //si il n'existe pas je retourne null
         } else {
 
@@ -1127,7 +1419,7 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
 
         $idRecepteur = $request->get('recepteur_id');
@@ -1143,6 +1435,20 @@ class ApiController extends AbstractController
 
         //je vérifie que mes deux utilisateur existe
         if (!empty($userEmetteur) && !empty($userRecepteur)) {
+
+
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$userEmetteur);
+
+            //si son token est valide
+            if($validToken) {
 
             //j'essai de récupéré une éventuel conversation entre les deux utilisateurs
             $headerEmetteur = $this->getDoctrine()->getRepository(HeaderMsg::class)->findOneBy(["emetteur_id" => $idEmetteur, "recepteur_id" => $idRecepteur]);
@@ -1197,7 +1503,14 @@ class ApiController extends AbstractController
             }
 
 
+            }else{
 
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
         //si un des deux utilisateur n'existe pas, je renvoi un message d'erreur
         }else{
 
@@ -1226,7 +1539,7 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
 
         //je recupere les deux utilisateurs
@@ -1238,6 +1551,18 @@ class ApiController extends AbstractController
         //je vérifie si il existe en bdd sinon j'envoi un message d'erreur
         if (!empty($userEmetteur) && !empty($userRecepteur)) {
 
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$userEmetteur);
+
+            //si son token est valide
+            if($validToken) {
             $headerEmetteur = $this->getDoctrine()->getRepository(HeaderMsg::class)->findOneBy(["emetteur_id" => $idEmetteur, "recepteur_id" => $idRecepteur]);
 
             //je verifie que l'emmeteur a deja envoyé un message au recepteur sinon j'envoi un message d'erreur
@@ -1268,6 +1593,15 @@ class ApiController extends AbstractController
 
             }
 
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
+
         } else {
 
             $reponse->setStatusCode("404");
@@ -1285,7 +1619,7 @@ class ApiController extends AbstractController
 
 
     //cette methode permet de connaitre si une conversation existe entre deux membres
-    public function getIfHeaderMsgExist($idEmetteur, $idRecepteur){
+    public function getIfHeaderMsgExist($idEmetteur, $idRecepteur,Request $request){
 
 
 
@@ -1297,8 +1631,21 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
+        $em = $this->getDoctrine()->getManager();
+        $secu = new TokenAuthenticator($em);
+
+        //je recupere le token de l'utilisateur en question
+
+        $credential = $secu->getCredentialsforParam($request);
+
+        $user = $this->getDoctrine()->getRepository(User::class)->findOneBy(['apiToken' => $credential['token']]);
+        //je verifie si le token est valide
+        $validToken = $secu->checkCredentials($credential,$user);
+
+        //si son token est valide
+        if($validToken) {
         //j'initialise un boolean
         $drapeau = false;
         $tableau = array();
@@ -1318,7 +1665,14 @@ class ApiController extends AbstractController
         $reponse->headers->set('Content-Type', 'application/json');
         $reponse->setContent(json_encode($tableau));
         $reponse->setStatusCode('200');
+        }else{
 
+
+            $reponse->setStatusCode("403");
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setContent("Vous n'avez pas les permissions");
+
+        }
         return $reponse;
     }
 
@@ -1344,13 +1698,27 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
         $reponse->headers->set('Content-Type', 'text/plain');
 
 
         //je teste si l'utilisateur existe et que je reçois bien des données
 
         if (!empty($user) && !empty($request) && $request != null) {
+
+
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
 
             //je vérifie si il n'a pas deja des préférence enregistrer
 
@@ -1367,11 +1735,18 @@ class ApiController extends AbstractController
             $musique = $request->get('musiqueFavoris');
             $club = $request->get('clubFavoris');
             $statut = $request->get('statut');
+            $perimetre = $request->get('perimetre');
 
 
             if ($sexe == "indifferent") {
 
                 $sexe = null;
+            }
+
+            //si mon utilisateur ne choisie pas de perimetre par défault je l'affecte a 3 km
+            if($perimetre== "indifferent"){
+
+                $perimetre = 3;
             }
 
             if ($trancheAge == "indifferent") {
@@ -1456,6 +1831,7 @@ class ApiController extends AbstractController
                 $preference->setClubFavoris($club);
                 $preference->setStatut($statut);
                 $preference->setRecherchantId($user);
+                $preference->setPerimetre($perimetre);
 
                 $preference->setResultatRecherche($tableauJsonRecherche);
 
@@ -1472,13 +1848,24 @@ class ApiController extends AbstractController
                 $preference->setClubFavoris($club);
                 $preference->setStatut($statut);
                 $preference->setRecherchantId($user);
+                $preference->setPerimetre($perimetre);
                 $preference->setResultatRecherche($tableauJsonRecherche);
+
 
                 $entityManager->persist($preference);
                 $entityManager->flush();
                 $reponse->setStatusCode('200');
                 $reponse->headers->set('Content-Type', 'application/json');
                 $reponse->setContent(json_encode($tableauJsonRecherche));
+            }
+                //si le token n'est pas valide
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
             }
         } else {
 
@@ -1520,7 +1907,71 @@ class ApiController extends AbstractController
         return $this->json($preference);
 
     }
+    /**
+     * @Route("/api/getPreferencePerimetreUser/{idUser}", name="getPreferencePerimetreUser")
+     */
+    public function getPerimetreUser($idUser,Request $request){
 
+        $reponse = new  Response();
+        $reponse->headers->set("Access-Control-Allow-Origin", '*');
+        $reponse->headers->set('Access-Control-Allow-Credentials', true);
+        $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
+        //je récupère l'utilisateur
+
+        $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
+
+        if (!empty($user)){
+
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
+
+        $tableau = array();
+
+            $preference = $this->getDoctrine()->getRepository(Recherche::class)->findOneBy(["recherchant_id" => $idUser]);
+        if(!empty($preference) && $preference->getPerimetre() != null){
+
+            $tableau['perimetre'] = $preference->getPerimetre();
+
+        }else{
+
+            $tableau['perimetre'] = 3;
+
+        }
+
+            $reponse->headers->set('Content-Type', 'application/json');
+            $reponse->setContent(json_encode($tableau));
+            $reponse->setStatusCode('200');
+            
+                //si le token n'est pas valide
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
+        }else{
+
+            $reponse->headers->set('Content-Type', 'text/plain');
+            $reponse->setStatusCode('404');
+            $reponse->setContent("Erreur : l'utilisateur n'existe pas ou je ne reçois aucune données");
+
+        }
+
+        return $reponse;
+    }
 
     /**
      * @Route("/api/putPreference/{idUser}", name="putPreferenceUser")
@@ -1536,7 +1987,7 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
 
         //je récupère l'utilisateur
@@ -1548,11 +1999,24 @@ class ApiController extends AbstractController
 
         if (!empty($user) && !empty($request) && $request != null) {
 
+
+            $entityManager = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($entityManager);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
             //je vérifie si il n'a pas deja des préférence enregistrer
 
             $preference = $this->getDoctrine()->getRepository(Recherche::class)->findOneBy(["recherchant_id" => $idUser]);
 
-            $entityManager = $this->getDoctrine()->getManager();
+
 
 
             //je recupères les imformations envoyé que je stocke dans des variables
@@ -1563,6 +2027,7 @@ class ApiController extends AbstractController
             $musique = $request->get('musiqueFavoris');
             $club = $request->get('clubFavoris');
             $statut = $request->get('statut');
+            $perimetre = $request->get('perimetre');
 
 
             if ($sexe == "indifferent") {
@@ -1593,6 +2058,11 @@ class ApiController extends AbstractController
                 $statut = null;
             }
 
+            //si mon utilisateur ne choisie pas de perimetre par défault je l'affecte a 3 km
+                if($perimetre== "indifferent"){
+
+                    $perimetre = 3;
+                }
 
             //je remplie mon tableau suivant ce que l'uttilisateur a rechercher
             $tableauRecherche = array();
@@ -1655,11 +2125,15 @@ class ApiController extends AbstractController
                 $preference->setClubFavoris($club);
                 $preference->setStatut($statut);
                 $preference->setRecherchantId($user);
+                $preference->setPerimetre($perimetre);
                 $preference->setResultatRecherche($tableauJsonRecherche);
+
 
                 $entityManager->merge($preference);
                 $entityManager->flush();
                 $reponse->setStatusCode('200');
+
+//si le token n'est pas valide
 
 
                 //si elle n'existe pas, j'envoi un message d'erreur
@@ -1671,6 +2145,14 @@ class ApiController extends AbstractController
 
             }
 
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
 
         } else {
             $reponse->headers->set('Content-Type', 'text/plain');
@@ -1786,7 +2268,7 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
         //je recupere l'utilisateur par rapport a l'id
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
 
@@ -1799,7 +2281,18 @@ class ApiController extends AbstractController
 
         //je teste si l'utilisateur et le role existe
         if (!empty($user) ) {
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
 
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
             //je tente de verifier si l'uttilisateur possede deja un role
             $currentRole = $user->getTypeUserId();
 
@@ -1824,6 +2317,14 @@ class ApiController extends AbstractController
 
            // }
             //si le role ou l'uttilisateur n'existe pas je renvoi un message d'erreur
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
         } else {
 
             $reponse->setStatusCode('404');
@@ -1900,7 +2401,18 @@ class ApiController extends AbstractController
 
         //je teste si l'uttilisateur existe et si je reçois des données correcte, si tous en bon
         if (!empty($user)) {
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
 
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
 
 //je met a jour le status de l'uttilisateur, je le persiste et j'envois un statue 200
             $user->setModeSortie($statut);
@@ -1911,6 +2423,14 @@ class ApiController extends AbstractController
 
             $reponse->setStatusCode('200');
 
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
             //sinon j'envoi un message d'erreur
         } else {
             //sinon il n'y pas de statut
@@ -2200,6 +2720,19 @@ class ApiController extends AbstractController
 
 
         if(!empty($currentUser)) {
+
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$currentUser);
+
+            //si son token est valide
+            if($validToken) {
             //je verifie que mes donné envoyé ne sois pas vide
             if ( $mailUser !== null && $pseudoUser !== null) {
 //je recupere les donnée envoyé
@@ -2259,7 +2792,7 @@ class ApiController extends AbstractController
 
 
                 }
-                dump($users);
+
                 $reponse->headers->set('Content-Type', 'application/json');
                 $reponse->setContent(json_encode($reponseVerifUser));
                 $reponse->setStatusCode('200');
@@ -2272,6 +2805,15 @@ class ApiController extends AbstractController
                 $reponse->headers->set('Content-Type', 'text/plain');
 
                 $reponse->setContent("les donné envoyé sont vide");
+
+            }
+
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
 
             }
         }else{
@@ -2398,33 +2940,56 @@ class ApiController extends AbstractController
 
         $pseudo = $request->get('pseudo');
 
-        $mdp = $request->get('mdp');
-
         $reponse = new Response();
 
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
 
+        //je recherche l'utilisateur
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findOneBy(["pseudo" => $pseudo]);
 
 
+    //si j'arrive a le récupérer
+        if ($user != null) {
 
-        if ($request->getContent() && $user != null) {
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
 
-            $userTrouver = array(
+            //je recupere le token de l'utilisateur en question
 
-                "nom" => $user->getNom()
+            $credential = $secu->getCredentials($request);
 
-            );
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
 
-            $reponse->headers->set('Content-Type', 'application/json');
-            $reponse->setContent($user->getJson());
-            $reponse->setStatusCode('200');
+            //si son token est valide
+            if($validToken) {
+
+                $userTrouver = array(
+
+                    "nom" => $user->getNom()
+
+                );
+                //je renvoi son non au format json
+                $reponse->headers->set('Content-Type', 'application/json');
+                $reponse->setContent($user->getJson());
+                $reponse->setStatusCode('200');
+
+             //si son token n'est pas valide je retourne a statut 403
+            }else{
 
 
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+
+                $reponse->setContent("Vous n'avez pas les permissions requises");
+
+            }
+
+        //si l'utilisateur n'existe pas je renvoi un message d'erreurc'est qu'il n'existerai pas
         } else {
 
             $reponse->setStatusCode("404");
@@ -2518,7 +3083,25 @@ class ApiController extends AbstractController
 
             }
 
+            //si le mdp et le pseudo sont correcte alors c'est le bon utilisateur
+            if($reponseVerifUser['validMdp'] && $reponseVerifUser['validPseudo']){
+
+            //je recherche l'utilisateur
+
+                $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findOneBy(["pseudo" => $pseudoUser]);
+
+
+                $em = $this->getDoctrine()->getManager();
+                $secu = new TokenAuthenticator($em);
+
+                //je crée le token et grace a cette methode je le persiste également
+                $token = $secu->createAuthenticatedToken($user,'toto');
+
+                $reponse->headers->set('Access-Control-Expose-Headers', 'X-AUTH-TOKEN');
+                $reponse->headers->set('X-AUTH-TOKEN', $user->getApiToken());
+            }
             $reponse->headers->set('Content-Type', 'application/json');
+
             $reponse->setContent(json_encode($reponseVerifUser));
             $reponse->setStatusCode('200');
 
@@ -2542,7 +3125,7 @@ class ApiController extends AbstractController
      * @Route("/api/checkIfPreference/{idUser}", name="checkIfPreference")
      */
 
-    public function checkIfPreference($idUser)
+    public function checkIfPreference($idUser, Request $request)
     {
 
 
@@ -2558,13 +3141,25 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
 
         //je teste si l'utilisateur existe et que je reçois bien des données
 
         if (!empty($user)) {
 
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
             //je vérifie si il n'a pas deja des préférence enregistrer
 
             $preference = $this->getDoctrine()->getRepository(Recherche::class)->findOneBy(["recherchant_id" => $idUser]);
@@ -2586,6 +3181,16 @@ class ApiController extends AbstractController
             $reponse->headers->set('Content-Type', 'application/json');
             $reponse->setContent(json_encode($tableau));
             $reponse->setStatusCode('200');
+
+
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
         } else {
 
             $reponse->setStatusCode("404");
@@ -2606,7 +3211,7 @@ class ApiController extends AbstractController
     //cette methode permet de renvoyer au format json le resultat de la recherche
     //d'un utilisateur par rapport a ses préférence ou bien si l'uttilisateur n'a pas de préférence,
     //la méthode renvoi tous les utilisateur en ligne du site au format json
-    public function getRechercheUser($idUser)
+    public function getRechercheUser($idUser, Request $request)
     {
 
 
@@ -2614,7 +3219,9 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        //$reponse->headers->set('Access-Control-Request-Headers', 'X-AUTH-TOKEN');
+        //$reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         //je tente de récupérer l'utilisateur par rapport a son id
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
@@ -2622,65 +3229,78 @@ class ApiController extends AbstractController
         //je verifie si l'utilisateur existe en bdd
         if (!empty($user)) {
 
-            //je tente de vérifier si l'utilisateur possede des préférence de recherche
 
-            $preference = $this->getDoctrine()->getRepository(Recherche::class)->findOneBy(["recherchant_id" => $idUser]);
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
 
-            //si l'utilisateur a des préférences enregistrer
-            if (!empty($preference)) {
+            //je recupere le token de l'utilisateur en question
 
+            $credential = $secu->getCredentialsforParam($request);
 
-                $entityManager = $this->getDoctrine()->getManager();
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
 
+            //si son token est valide
+            if($validToken) {
+                //je tente de vérifier si l'utilisateur possede des préférence de recherche
 
-                //je recupères ces préference
-                $sexe = $preference->getSexe();
-                $trancheAge = $preference->getTrancheAge();
-                $fumeur = $preference->getFumeur();
-                $musique = $preference->getMusiqueFavoris();
-                $club = $preference->getClubFavoris();
-                $statut = $preference->getStatut();
+                $preference = $this->getDoctrine()->getRepository(Recherche::class)->findOneBy(["recherchant_id" => $idUser]);
 
-
-                //je remplie mon tableau suivant ce que l'uttilisateur a rechercher
-                $tableauRecherche = array();
-
-                if ($sexe != null) {
-
-                    $tableauRecherche['sexe'] = $sexe;
-                }
-
-                if ($trancheAge != null) {
-
-                    $tableauRecherche['trancheAge'] = $trancheAge;
-                }
-
-                if ($fumeur != null) {
-
-                    $tableauRecherche['fumeur'] = $fumeur;
-                }
-
-                if ($musique != null) {
-
-                    $tableauRecherche['musique_favoris'] = $musique;
-                }
-
-                if ($club != null) {
-
-                    $tableauRecherche['club_favoris'] = $club;
-                }
-
-                if ($statut != null) {
-
-                    $idStatut = $this->getDoctrine()->getRepository(TypeUser::class)->findOneBy(["role" => $statut]);
-                    $tableauRecherche['type_user_id'] = $idStatut;
-                }
+                //si l'utilisateur a des préférences enregistrer
+                if (!empty($preference)) {
 
 
-                //je recherche tous les utilisateur qui correspond à la recherche en donnant a manger mon tableau
-                $resultatRecherche = $this->getDoctrine()
-                    ->getRepository(\App\Entity\User::class)
-                    ->findBy($tableauRecherche);
+                    $entityManager = $this->getDoctrine()->getManager();
+
+
+                    //je recupères ces préference
+                    $sexe = $preference->getSexe();
+                    $trancheAge = $preference->getTrancheAge();
+                    $fumeur = $preference->getFumeur();
+                    $musique = $preference->getMusiqueFavoris();
+                    $club = $preference->getClubFavoris();
+                    $statut = $preference->getStatut();
+
+
+                    //je remplie mon tableau suivant ce que l'uttilisateur a rechercher
+                    $tableauRecherche = array();
+
+                    if ($sexe != null) {
+
+                        $tableauRecherche['sexe'] = $sexe;
+                    }
+
+                    if ($trancheAge != null) {
+
+                        $tableauRecherche['trancheAge'] = $trancheAge;
+                    }
+
+                    if ($fumeur != null) {
+
+                        $tableauRecherche['fumeur'] = $fumeur;
+                    }
+
+                    if ($musique != null) {
+
+                        $tableauRecherche['musique_favoris'] = $musique;
+                    }
+
+                    if ($club != null) {
+
+                        $tableauRecherche['club_favoris'] = $club;
+                    }
+
+                    if ($statut != null) {
+
+                        $idStatut = $this->getDoctrine()->getRepository(TypeUser::class)->findOneBy(["role" => $statut]);
+                        $tableauRecherche['type_user_id'] = $idStatut;
+                    }
+
+
+                    //je recherche tous les utilisateur qui correspond à la recherche en donnant a manger mon tableau
+                    $resultatRecherche = $this->getDoctrine()
+                        ->getRepository(\App\Entity\User::class)
+                        ->findBy($tableauRecherche);
 
 
                     $tableauJsonRecherche = array();
@@ -2720,13 +3340,13 @@ class ApiController extends AbstractController
                     $tableauJsonRecherche = array();
 
 
-                     foreach ($resultatRecherche as $userRecherche) {
+                    foreach ($resultatRecherche as $userRecherche) {
 
                         array_push($tableauJsonRecherche, $userRecherche->getTabAsso());
 
                     }
 
-                $resultaRecherche = $tableauJsonRecherche;
+                    $resultaRecherche = $tableauJsonRecherche;
 
                 }
 
@@ -2735,6 +3355,16 @@ class ApiController extends AbstractController
                 $reponse->headers->set('Content-Type', 'application/json');
                 $reponse->setContent(json_encode($resultaRecherche));
                 $reponse->setStatusCode('200');
+
+            //si le token n'est pas valide
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
 
                 //si il n'existe pas je renvoi un message d'erreur
             } else {
@@ -2753,13 +3383,13 @@ class ApiController extends AbstractController
      */
 
     //cette methode permet de d'indiqué si la position de l'utilisateur a deja été inséré en bdd
-    public function getIfPositionExist($idUser){
+    public function getIfPositionExist($idUser,Request $request){
 
         $reponse = new  Response();
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         //je tente de récupérer l'utilisateur par rapport a son id
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
@@ -2767,6 +3397,18 @@ class ApiController extends AbstractController
 
         if(!empty($user)){
 
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
 
             //je tente de récupérer sa lattitude et sa longitude
             $latitudeUser = $user->getLatitude();
@@ -2795,7 +3437,14 @@ class ApiController extends AbstractController
             $reponse->setContent(json_encode($tableauJson));
             $reponse->setStatusCode('200');
 
+            }else{
 
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
          //si l'uttilisateur n'existe pas je renvoi un message d'erreur
         }else{
 
@@ -2819,7 +3468,7 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         //je tente de récupérer l'utilisateur par rapport a son id
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
@@ -2827,6 +3476,18 @@ class ApiController extends AbstractController
 
         if(!empty($user)){
 
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
+
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
 
             //je tente de récupérer les imformations envoyé
             $latitudeUser = $request->get('latitude');
@@ -2873,6 +3534,14 @@ class ApiController extends AbstractController
 
 
             }
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
             //si l'uttilisateur n'existe pas je renvoi un message d'erreur
         }else{
 
@@ -2899,7 +3568,7 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin",'*');
         $reponse->headers->set('Access-Control-Allow-Credentials',true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         //je tente de récupérer l'utilisateur par rapport a son id
         $user = $this->getDoctrine()->getRepository(\App\Entity\User::class)->find($idUser);
@@ -2911,7 +3580,18 @@ class ApiController extends AbstractController
 
         if(!empty($user)){
 
+            $em = $this->getDoctrine()->getManager();
+            $secu = new TokenAuthenticator($em);
 
+            //je recupere le token de l'utilisateur en question
+
+            $credential = $secu->getCredentialsforParam($request);
+
+            //je verifie si le token est valide
+            $validToken = $secu->checkCredentials($credential,$user);
+
+            //si son token est valide
+            if($validToken) {
 
 
                 //je tente de récupérer les imformations envoyé
@@ -2945,6 +3625,14 @@ class ApiController extends AbstractController
                 //si sa position n' existe pas je renvoi un message d'erreur
 
             //si l'uttilisateur n'existe pas je renvoi un message d'erreur
+            }else{
+
+
+                $reponse->setStatusCode("403");
+                $reponse->headers->set('Content-Type', 'text/plain');
+                $reponse->setContent("Vous n'avez pas les permissions");
+
+            }
         }else{
 
 
