@@ -9,6 +9,10 @@ security:
             entity:
                 class: App\Entity\User
                 property: pseudo
+        in_token:
+            entity:
+                class: App\Entity\User
+                property: apiToken
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
@@ -19,12 +23,19 @@ security:
             form_login:
                 login_path: connexion
                 check_path: connexion
+            logout:
+                path: /logout
+        api:
+            pattern: ^/api/
+            provider : in_token
+            guard:
+                authenticators:
+                    - App\Security\TokenAuthenticator
 
             # activate different ways to authenticate
 
             #http_basic: true
-            logout:
-                path: /logout
+
             # https://symfony.com/doc/current/security.html#a-configuring-how-your-users-will-authenticate
 
             # form_login: true
