@@ -3,18 +3,70 @@
 {% block title %}Hello {{ controller_name }}!{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
-
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
-
-    This friendly message is coming from:
+<div class="container">
+<br>
+<h5>Actuellement il y a :</h5>
+ <ul>
+     <li>{{ nbUser }} utilisateurs inscrit sur le site.</li>
+     <li>{{ nbSam }} utilisateurs qui ont le role de Sam avec le mode sortie activé</li>
+     <li>{{ nbConsomateur }} utilisateurs qui ont le role de Consomateur avec le mode sortie activé</li>
+     <li>{{ nbUserBloquer }} utilisateurs qui ont leurs compte bloqué</li>
+ </ul>
+    <hr>
+<div class="row">
+    <div class="col-sm-6">
+    <h5>Nombres d'utilisateurs qui préfère ce club :</h5>
     <ul>
-        <li>Your controller at <code><a href="{{ 'src/Controller/StatistiqueController.php'|file_link(0) }}">src/Controller/StatistiqueController.php</a></code></li>
-        <li>Your template at <code><a href="{{ 'templates/statistique/index.html.twig'|file_link(0) }}">templates/statistique/index.html.twig</a></code></li>
+        <li>Le Milk : {{ nbUserClubMilk }}</li>
+        <li>Le Heat : {{ nbUserClubHeat }}</li>
+        <li>Le Pulp : {{ nbUserClubPulp }}</li>
+        <li>L'Osmose : {{ nbUserClubOsmose }}</li>
+        <li>Le Coconuts : {{ nbUserClubCononuts }}</li>
+        <li>Le Fizz : {{ nbUserClubFizz }}</li>
+        <li>Le Point Zero : {{ nbUserClubPointZero }}</li>
+        <li>L'Opéra : {{ nbUserClubOpera }}</li>
+        <li>La Dune : {{ nbUserClubDune }}</li>
+        <li>Le Panama : {{ nbUserClubPanama }}</li>
+        <li>Le Dream : {{ nbUserClubDream }}</li>
+        <li>L'OT : {{ nbUserClubLOT }}</li>
+        <li>Les Coulisses : {{ nbUserClubCoulisse }}</li>
+        <li>Le Domaine de verchant : {{ nbUserClubDomaineVerchant }}</li>
+        <li>Le clos : {{ nbUserClubClot }}</li>
+        <li>Le Prose : {{ nbUserClubProse }}</li>
+        <li>Le Mas du Ministre : {{ nbUserClubMasMinistre }}</li>
+        <li>Le Mas du courant : {{ nbUserClubMasCourant }}</li>
+        <li>Le Mas du cheval : {{ nbUserClubMasCheval }}</li>
+        <li>Le Zèbre bleu : {{ nbUserClubZebreBleu }}</li>
+        <li>La Voile bleue : {{ nbUserClubVoileBleu }}</li>
+        <li>L'Effet Mer : {{ nbUserClubEffetMer }}</li>
+        <li>La Paillotte bambou : {{ nbUserClubPailloteBambou }}</li>
+        <li>Le Carré Mer : {{ nbUserClubCarreMer }}</li>
+        <li>Le Beach : {{ nbUserClubBeach }}</li>
+        <li>Le Latzarro : {{ nbUserClubLatzarro }}</li>
+        <li>Les Pieds nus : {{ nbUserClubPiedNus }}</li>
+        <li>Le Lezard : {{ nbUserClubLezard }}</li>
     </ul>
+    </div>
+    <div class="col-sm-6">
+        <h5>Nombres d'utilisateur qui préfère cette musique :</h5>
+        <ul>
+            <li>Généraliste : {{ nbUserMusGeneraliste }}</li>
+            <li>RnB : {{ nbUserMusRnb }}</li>
+            <li>Hip Hop : {{ nbUserMusHipHop }}</li>
+            <li>Latino : {{ nbUserMusLatino }}</li>
+            <li>House : {{ nbUserMusHouse }}</li>
+            <li>Rock : {{ nbUserMusRock }}</li>
+            <li>Disco : {{ nbUserMusDisco }}</li>
+            <li>Techno : {{ nbUserMusTechno }}</li>
+            <li>Afro : {{ nbUserMusAfro }}</li>
+            <li>Electro : {{ nbUserMusElectro }}</li>
+            <li>Salsa : {{ nbUserMusSalsa }}</li>
+            <li>Ragga : {{ nbUserMusRagga }}</li>
+            <li>Funk : {{ nbUserMusFunk }}</li>
+            <li>Reggae : {{ nbUserMusReggae }}</li>
+            <li>Styles varies : {{ nbUserMusStyleVarie }}</li>
+        </ul>
+    </div>
+</div>
 </div>
 {% endblock %}
