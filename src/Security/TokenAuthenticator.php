@@ -53,6 +53,8 @@ class TokenAuthenticator extends AbstractGuardAuthenticator
             'token' => $request->headers->get('X-AUTH-TOKEN')
         );
     }
+
+    //cette fonction retourn un tableau assiosiatif avec pour valeur le token qu
     public function getCredentialsforParam(Request $request)
     {
         return array(
@@ -116,12 +118,13 @@ class TokenAuthenticator extends AbstractGuardAuthenticator
     public function createAuthenticatedToken(UserInterface $user, $providerKey)
     {
 
-        //je crée un token
+        //je génère un token ramdom en base_64
         $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
 
         //je l'affecte a mon utilisateur
         $user->setApiToken($token);
 
+        //je persiste mon utilisateur et son token
         $this->em->persist($user);
 
         $this->em->flush();

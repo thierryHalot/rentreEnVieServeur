@@ -355,6 +355,7 @@ class User implements UserInterface
         return $this;
     }
 
+    //cette méthode retourne les imformations de l'utilisateur au format json
     public function getJson(){
 
         $user = array(
@@ -411,6 +412,7 @@ class User implements UserInterface
 
     }
 
+    //cette méthode retourne un tableau associatif des imformation de mon utilisateur au format json
     public function getTabAsso(){
 
 

@@ -26,13 +26,13 @@ class AppFixtures extends Fixture
     public function load(ObjectManager $manager)
     {
 
-        //je commence par genérer le jeu de donné de mes roles
+        //je commence par générer le jeu de donné de mes rôles
 
         $roleAdmin = $this->generateRole("admin");
         $roleSam = $this->generateRole("sam");
         $roleConso = $this->generateRole("consomateur");
 
-        //je persiste mes roles
+        //je persiste mes rôles
 
         $manager->persist($roleAdmin);
         $manager->persist($roleSam);

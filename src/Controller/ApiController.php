@@ -778,7 +778,7 @@ class ApiController extends AbstractController
          //je garde que les 6 premiers caractere qui correspondra a mon nouveau de passe
          $newMdp = substr($newMdp,0,6);
 
-         //avant de persister je hache le mdp
+         //avant de persister je hache le Mdp
          $hash = $encoder->encodePassword($user,$newMdp);
          $user->setMdp($hash);
 
@@ -1159,6 +1159,8 @@ class ApiController extends AbstractController
             $reponse->setContent("Erreur : la conversation n'existe pas");
             $reponse->headers->set('Content-Type', 'text/plain');
         }
+
+        //Si le token est invalide l'uttilisateur n'a pas les droits
         }else{
 
 
@@ -1169,7 +1171,6 @@ class ApiController extends AbstractController
         }
 
         //je retourne la conversation au format json
-        //return $this->json($conversation);
         return $reponse;
     }
 
@@ -2461,10 +2462,10 @@ class ApiController extends AbstractController
 
 
         $response = new Response();
-        $reponse->headers->set("Access-Control-Allow-Origin", '*');
-        $reponse->headers->set('Access-Control-Allow-Credentials', true);
-        $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $response->headers->set("Access-Control-Allow-Origin", '*');
+        $response->headers->set('Access-Control-Allow-Credentials', true);
+        $response->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
+        $response->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
 
         //je teste si il existe
         if (!empty($user)) {
@@ -2860,7 +2861,12 @@ class ApiController extends AbstractController
 
             $users = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findAll();
 
-
+            //si jamais, il n'y a aucun utilisateur d'enregistrer,
+            //dans ce cas les données envoyée sont correcte
+            if(empty($user)){
+                $reponseVerifUser['validMail'] = true;
+                $reponseVerifUser['validPseudo'] = true;
+            }
             //dans un un premier temp je boucle dans mes utilisateur pour rechercher si le pseudo a deja été utilisé
             foreach ($users as $user) {
 
@@ -2960,7 +2966,7 @@ class ApiController extends AbstractController
 
             //je recupere le token de l'utilisateur en question
 
-            $credential = $secu->getCredentials($request);
+            $credential = $secu->getCredentialsforParam($request);
 
             //je verifie si le token est valide
             $validToken = $secu->checkCredentials($credential,$user);
@@ -3015,14 +3021,14 @@ class ApiController extends AbstractController
         $reponse->headers->set("Access-Control-Allow-Origin", '*');
         $reponse->headers->set('Access-Control-Allow-Credentials', true);
         $reponse->headers->set('Access-Control-Allow-Methods', 'GET,POST,DELETE,PUT,OPTION');
-        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With");
+        $reponse->headers->set("Access-Control-Allow-Headers", "Content-Type,Origin,Accept,Authorization,X-Request-With,X-AUTH-TOKEN");
 
         $mdpUser = $request->get('mdp');
         $pseudoUser = $request->get('pseudo');
 
 
         //je verifie que mes donné envoyé ne sois pas vide
-        if ($request->getContent() && $mdpUser !== null && $pseudoUser !== null) {
+        if ($mdpUser !== null && $pseudoUser !== null) {
 //je recupere les donnée envoyé
 
             //j'inisialise un tableau
@@ -3030,7 +3036,11 @@ class ApiController extends AbstractController
 
             $users = $this->getDoctrine()->getRepository(\App\Entity\User::class)->findAll();
 
-
+//            if(empty($users)){
+//
+//                $reponseVerifUser['validPseudo'] = false;
+//                $reponseVerifUser['validMdp'] = false;
+//            }
             //dans un un premier temp je boucle dans mes utilisateur pour rechercher si le pseudo a deja été utilisé
             foreach ($users as $user) {
 
@@ -3095,7 +3105,7 @@ class ApiController extends AbstractController
                 $secu = new TokenAuthenticator($em);
 
                 //je crée le token et grace a cette methode je le persiste également
-                $token = $secu->createAuthenticatedToken($user,'toto');
+                $secu->createAuthenticatedToken($user,'toto');
 
                 $reponse->headers->set('Access-Control-Expose-Headers', 'X-AUTH-TOKEN');
                 $reponse->headers->set('X-AUTH-TOKEN', $user->getApiToken());
